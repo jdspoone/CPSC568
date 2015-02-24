@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="javadoc">
+    <target name="javadoc">
+        <javadoc access="private" 
+        	additionalparam=" -header &quot;&lt;img src=http://casa.cpsc.ucalgary.ca/javadoc/casa/doc-files/casa32.png alt=CASA border=0 align=right hspace=3 &gt; &lt;font size=-2&gt;Knowledge Science Group&lt;/br&gt;Dept of Computer Science&lt;br&gt;Univeristy of Calgary&lt;/font&gt;&quot; " 
+        	author="true" 
+        	classpath="/Applications/eclipse 4.3.2/plugins/org.junit_4.11.0.v201303080030/junit.jar:../dataFiles:../jars/abcl.jar:../jars/commons-codec-1.3.jar:/Applications/eclipse 4.3.2/plugins/org.hamcrest.core_1.3.0.v201303031735.jar:../includes/jdom" 
+        	destdir="/Users/kremer/www-CPSC/CASA/javadoc" 
+        	doctitle="CASA (Collaborative Agent System Architecture)" 
+        	nodeprecated="false" 
+        	nodeprecatedlist="false" 
+        	noindex="false" 
+        	nonavbar="false" 
+        	notree="false" 
+        	overview="/Apple/CASA/src/casa/overview.html" 
+        	source="1.6" 
+        	sourcefiles="../../abcl-src-0.25.0/examples/pure-lisp-to-java/Main.java,../../abcl-src-0.25.0/examples/java-to-lisp-1/MainAlternative.java,../../abcl-src-0.25.0/examples/lisp-to-java/Main.java,../../abcl-src-0.25.0/examples/java-exception/Main.java,../../abcl-src-0.25.0/examples/java-to-lisp-2/Main.java,../../abcl-src-0.25.0/examples/java-interface/MyInterface.java,../../abcl-src-0.25.0/examples/java-interface/Main.java,../../abcl-src-0.25.0/examples/java-interface/BankExampleMain.java,../../abcl-src-0.25.0/examples/jsr-223/JSR223Example.java,../../abcl-src-0.25.0/examples/java-to-lisp-1/Main.java,../../abcl-src-0.25.0/examples/misc/hello.java,../../abcl-src-0.25.0/examples/java-interface/BankAccount.java" 
+        	sourcepath="../../abcl-src-0.25.0/examples/jsr-223:../../abcl-src-0.25.0/examples/lisp-to-java:../../abcl-src-0.25.0/examples/java-exception:../../abcl-src-0.25.0/examples/java-to-lisp-1:../../abcl-src-0.25.0/examples/google-app-engine/src:../../abcl-src-0.25.0/examples/misc:../../abcl-src-0.25.0/examples/gui:../../abcl-src-0.25.0/examples/java-interface:../../abcl-src-0.25.0/examples/pure-lisp-to-java:../src:../../abcl-src-0.25.0/src:../../abcl-src-0.25.0/examples/java-to-lisp-2" 
+        	splitindex="true" 
+        	stylesheetfile="/Apple/CASA/build/javadocOrange.css" 
+        	use="true" 
+        	version="true">
+        	<!--  packagenames="casa.ontology,org.armedbear.lisp.util,casa.conversation2,jade.semantics.kbase.filters.std.assertion,jade.semantics.kbase.filters,jade.semantics.kbase.observers,jade.domain,jade.semantics.kbase,abcl_ae,jade.semantics.lang.sl.parser,jade.content.onto.basic,org.armedbear.lisp.scripting,casa.command,casa,casa.transaction.ui,jade.content.onto,casa.socialcommitments.operators,jade.semantics.kbase.filters.std.builtins,jade.semantics.lang.sl.tools,jade.semantics.kbase.filters.std,casa.abcl,casa.policy.sc3.actions,casa.transaction,jade.content.schema,casa.ui.resize,jade.content.abs,jade.content.schema.facets,jade.semantics.lang.sl.content,jade.core.behaviours,casa.service,casa.io.test,casa.ui,abcl,casa.event,swing,jade.content,jade.lang.acl,casa.socialcommitments.ui,jade.core,casa.jade,casa.io,casa.util,org.armedbear.lisp,jade.semantics.behaviours,casa.policy,awt,jade.content.lang.sl,casa.demo,casa.policy.sc3,casa.security,casa.socialcommitments,jade.domain.FIPAAgentManagement,jade.content.lang,org.ksg.casa,jade.semantics.lang.sl.grammar.operations,casa.platform,jade.semantics.lang.sl.grammar,jade.content.onto.annotations,casa.interfaces,jade.util,casa.io.tools,jade.semantics.kbase.filters.std.query,casa.ontology.v3,org.armedbear.lisp.java.swing,jade.content.frame,jade.util.leap,casa.exceptions,casa.testAgents,jade.semantics.interpreter,jade.semantics.actions"--> 
+            <link href="http://download.oracle.com/javase/6/docs/api/"/>
+            <link href="http://www.junit.org/junit/javadoc/4.5"/>
+        </javadoc>
+    </target>
+</project>

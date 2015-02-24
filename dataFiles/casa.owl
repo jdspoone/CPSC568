@@ -1,0 +1,22 @@
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(casa:=<http://casa.cpsc.ucalgary.ca/ontologies/casa.owl#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(events:=<http://casa.cpsc.ucalgary.ca/ontologies/events.owl#>)
+Prefix(actions:=<http://casa.cpsc.ucalgary.ca/ontologies/actions.owl#>)
+
+
+Ontology(<http://casa.cpsc.ucalgary.ca/ontologies/casa.owl>
+Import(<http://casa.cpsc.ucalgary.ca/ontologies/actions.owl>)
+Annotation(rdfs:comment "CASA Agent Infrastructure default (base) ontology"^^xsd:string)
+
+Declaration(Class(casa:TOP))
+EquivalentClasses(casa:TOP owl:Thing)
+Declaration(Class(casa:URL))
+SubClassOf(casa:URL casa:identifier)
+Declaration(Class(casa:current-conversation-ids))
+Declaration(Class(casa:identifier))
+EquivalentClasses(owl:Thing casa:TOP)
+)

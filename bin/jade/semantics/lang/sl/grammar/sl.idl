@@ -1,0 +1,419 @@
+./*****************************************************************
+.JADE - Java Agent DEvelopment Framework is a framework to develop 
+.multi-agent systems in compliance with the FIPA specifications.
+.JSA - JADE Semantics Add-on is a framework to develop cognitive
+.agents in compliance with the FIPA-ACL formal specifications.
+.
+.Copyright (C) 2007 France Telecom
+.
+.GNU Lesser General Public License
+.
+.This library is free software; you can redistribute it and/or
+.modify it under the terms of the GNU Lesser General Public
+.License as published by the Free Software Foundation, 
+.version 2.1 of the License. 
+.
+.This library is distributed in the hope that it will be useful,
+.but WITHOUT ANY WARRANTY; without even the implied warranty of
+.MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.Lesser General Public License for more details.
+.
+.You should have received a copy of the GNU Lesser General Public
+.License along with this library; if not, write to the
+.Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+.Boston, MA  02111-1307, USA.
+.*****************************************************************/
+.
+.
+.//-----------------------------------------------------
+.// This file has been automatically produced by a tool.
+.//-----------------------------------------------------
+.
+.package jade.semantics.lang.sl.grammar;
+.
+.//#PJAVA_EXCLUDE_BEGIN
+.import java.util.Collection;
+.import java.util.Collections;
+.import java.util.Comparator;
+.import java.util.LinkedList;
+.import java.util.List;
+.import java.util.Vector;
+.import java.util.HashMap;
+.//#PJAVA_EXCLUDE_END
+./*#PJAVA_INCLUDE_BEGIN
+.import jade.util.leap.Collection;
+.import jade.util.leap.Comparable;
+.import jade.util.leap.LinkedList;
+.import jade.util.leap.List;
+.import jade.util.leap.HashMap;
+.#PJAVA_INCLUDE_END*/
+.
+----------------------------------------------------
+--                  CONTENT
+----------------------------------------------------
+CONTENT ::= content
+         => as_expressions : CONTENT_EXPRESSION_S
+{
+    String toSLString();
+    Node getContentElement(int i);
+    void setContentElement(int i, Node element);
+    void addContentElement(Node element);
+    void setContentElements(int number);
+    int contentElementNumber();
+    jade.semantics.lang.sl.tools.MatchResult match(Node expression);
+};
+
+content =>;
+----------------------------------------------------
+--              CONTENT_EXPRESSION
+----------------------------------------------------
+CONTENT_EXPRESSION_S ::= Seq of CONTENT_EXPRESSION;
+
+CONTENT_EXPRESSION ::= action_content_expression
+                     | identifying_content_expression
+                     | formula_content_expression
+                     | meta_content_expression_reference
+{
+   Node getElement();
+};
+
+action_content_expression => as_action_expression : ACTION_EXPRESSION;
+
+identifying_content_expression => as_identifying_expression : IDENTIFYING_EXPRESSION;
+
+formula_content_expression => as_formula : FORMULA;
+
+meta_content_expression_reference => lx_name : (java.lang.String),
+ 	                             sm_value : CONTENT_EXPRESSION;
+
+----------------------------------------------------
+--                  FORMULA
+----------------------------------------------------
+FORMULA_S ::= Seq of FORMULA;
+
+FORMULA ::= ATOMIC_FORMULA
+	  | UNARY_LOGICAL_FORMULA
+	  | MODAL_LOGIC_FORMULA
+	  | INSTITUTIONAL_LOGIC_FORMULA
+        | ACTION_FORMULA
+	  | QUANTIFIED_FORMULA
+        | BINARY_LOGICAL_FORMULA
+	  | meta_formula_reference
+	=> sm_simplified_formula : FORMULA
+{
+    FORMULA getSimplifiedFormula();
+    void simplify();
+    boolean isMentalAttitude(TERM term);
+    boolean isInstitutionalFact(TERM term);
+    boolean isSubsumedBy(FORMULA formula);
+    boolean isConsistentWith(FORMULA formula);
+    FORMULA getDoubleMirror(TERM i, TERM j, boolean default_result_is_true);
+    boolean isAFreeVariable(VARIABLE x);
+    FORMULA getVariablesSubstitution(VARIABLE_S vars);
+    FORMULA getVariablesSubstitutionAsIn(FORMULA formula);
+    FORMULA getVariablesSubstitution(VARIABLE x, VARIABLE y);
+    FORMULA isBeliefFrom(TERM agent);
+    FORMULA isInstitutionalFactFrom(TERM institution);
+    FORMULA isExistsOn(TERM variable);
+    jade.semantics.lang.sl.tools.MatchResult match(Node expression);
+    FORMULA instantiate(String varname, Node expression);
+};
+
+meta_formula_reference => lx_name : (java.lang.String),
+	                  sm_value : FORMULA;
+
+----------------------------------------------------
+--              UNARY_LOGICAL_FORMULA
+----------------------------------------------------
+UNARY_LOGICAL_FORMULA ::= not
+		       => as_formula : FORMULA;
+
+not =>;
+
+----------------------------------------------------
+--                ATOMIC_FORMULA
+----------------------------------------------------
+ATOMIC_FORMULA ::= proposition_symbol
+                 | result
+                 | predicate
+                 | true
+                 | false
+		 | equals;
+
+proposition_symbol => as_symbol : SYMBOL;
+
+result => as_term1 : TERM,
+          as_term2 : TERM;
+
+predicate => as_symbol : SYMBOL,
+             as_terms : TERM_S;
+true =>;
+false =>;
+
+equals => as_left_term : TERM,
+          as_right_term : TERM;
+
+
+----------------------------------------------------
+--              INSTITUTIONAL_LOGIC_FORMULA
+----------------------------------------------------
+
+INSTITUTIONAL_LOGIC_FORMULA ::= obligation
+				| count_as
+				| institutional_fact;
+
+obligation => as_formula : FORMULA;
+
+count_as => 	as_institution : TERM,
+	    	as_left_formula : FORMULA,
+		as_right_formula : FORMULA;
+
+institutional_fact => 	as_institution : TERM,
+			as_fact : FORMULA;
+
+
+----------------------------------------------------
+--              MODAL_LOGIC_FORMULA
+----------------------------------------------------
+MODAL_LOGIC_FORMULA ::= believe
+                     |  uncertainty
+                     |  intention
+                     |  persistent_goal
+		    => as_agent : TERM,
+	               as_formula : FORMULA;	
+
+believe =>;
+uncertainty =>;
+intention =>;
+persistent_goal =>;
+
+
+----------------------------------------------------
+--              ACTION_FORMULA
+----------------------------------------------------
+ACTION_FORMULA ::= done
+                |  feasible
+                => as_action : TERM,
+	           as_formula : FORMULA; -- Added by TM July, 29th, 2004.
+done =>;
+feasible =>;
+
+----------------------------------------------------
+--              QUANTIFIED_FORMULA
+----------------------------------------------------
+QUANTIFIED_FORMULA ::= exists
+                    |  forall
+		    => as_variable : VARIABLE,
+	               as_formula : FORMULA;	
+
+exists =>;
+forall =>;
+
+----------------------------------------------------
+--             BINARY_LOGICAL_FORMULA
+----------------------------------------------------
+BINARY_LOGICAL_FORMULA ::= implies
+			 | equiv 
+                         | or
+			 | and
+			=> as_left_formula : FORMULA,
+       			   as_right_formula : FORMULA;
+implies =>;
+equiv =>;
+or => 
+{
+	FORMULA_S getLeaves();
+};
+
+and =>
+{
+	FORMULA_S getLeaves();
+};
+
+----------------------------------------------------
+--                    TERM
+----------------------------------------------------
+TERM_S ::= Seq of TERM;
+
+TERM ::= VARIABLE
+       | CONSTANT
+       | TERM_SET
+       | TERM_SEQUENCE
+       | FUNCTIONAL_TERM
+       | ACTION_EXPRESSION
+	 | FACT
+       | IDENTIFYING_EXPRESSION
+       | CONTENT
+       | meta_term_reference
+       => sm_simplified_term : TERM
+{
+    TERM getSimplifiedTerm();
+    void simplify();
+    jade.semantics.lang.sl.tools.MatchResult match(Node expression);
+    TERM instantiate(String varname, Node expression);
+};
+
+meta_term_reference => lx_name : (java.lang.String),
+		       sm_value : TERM;
+
+
+
+----------------------------------------------------
+--            FACT
+----------------------------------------------------
+
+FACT ::= fact
+        => as_formula : FORMULA;
+
+fact => ;
+
+----------------------------------------------------
+--            IDENTIFYING_EXPRESSION
+----------------------------------------------------
+IDENTIFYING_EXPRESSION ::= any
+	                 | iota
+                         | all
+			 | some
+		        => as_term : TERM,
+                           as_formula : FORMULA;
+
+any => ;
+all => ;
+iota => ;
+some => ;
+
+----------------------------------------------------
+--                   VARIABLE
+----------------------------------------------------
+VARIABLE_S ::= Seq of VARIABLE;
+
+VARIABLE ::= variable
+           | meta_variable_reference
+           => lx_name : (java.lang.String);
+
+variable => ;
+
+meta_variable_reference => sm_value : VARIABLE;
+
+----------------------------------------------------
+--                   CONSTANT
+----------------------------------------------------
+CONSTANT ::= INTEGER_CONSTANT
+           | real_constant
+           | STRING_CONSTANT
+           | date_time_constant
+{
+	Long intValue();
+	Double realValue();
+	String stringValue();
+	byte[] byteValue();
+};
+
+STRING_CONSTANT ::= string_constant
+                  | word_constant
+                  | byte_constant;
+
+INTEGER_CONSTANT ::= integer_constant
+                   | relative_time_constant
+                   => lx_value : (java.lang.Long);
+
+integer_constant =>;
+-- lx_value : (java.lang.Long);
+real_constant => lx_value : (java.lang.Double);
+string_constant => lx_value : (java.lang.String), lx_hashcode : (int);
+word_constant => lx_value : (java.lang.String), lx_hashcode : (int);
+byte_constant => lx_value : (byte[]);
+date_time_constant => lx_value : (java.util.Date);
+
+----------------------------------------------------
+--                    TERM_SET
+----------------------------------------------------
+TERM_SET ::= term_set
+		  => as_terms : TERM_S
+{
+	void addTerm(TERM term);
+	void removeTerm(TERM term);
+	TERM getTerm(int i);
+	int  size();
+};
+
+term_set =>;
+
+----------------------------------------------------
+--                   TERM_SEQUENCE
+----------------------------------------------------
+TERM_SEQUENCE ::= term_sequence
+	           => as_terms : TERM_S
+{
+	void addTerm(TERM term);
+	void removeTerm(TERM term);
+	TERM getTerm(int i);
+	int  size();
+};
+
+term_sequence =>;
+
+----------------------------------------------------
+--                  ACTION
+----------------------------------------------------
+ACTION_EXPRESSION ::= action_expression
+                    | alternative_action_expression
+                    | sequence_action_expression
+                   => sm_action : (jade.semantics.actions.SemanticAction)
+{
+  	TERM_S getActors();
+  	TERM getActor();
+	ACTION_EXPRESSION getFirstStep();
+};
+
+action_expression => as_agent : TERM,
+                     as_term : TERM;
+
+alternative_action_expression => as_left_action : TERM,
+	                         as_right_action : TERM;
+	                         
+sequence_action_expression => as_left_action : TERM,
+	                      as_right_action : TERM;
+
+----------------------------------------------------
+--                 FUNCTIONAL_TERM
+----------------------------------------------------
+FUNCTIONAL_TERM ::= functional_term
+                  | functional_term_param
+	         => as_symbol :SYMBOL;
+
+functional_term => as_terms : TERM_S;
+
+functional_term_param => as_parameters : PARAMETER_S
+{
+    TERM getParameter(String name);
+    void setParameter(String name, TERM term);
+};
+
+----------------------------------------------------
+--                 PARAMETER
+----------------------------------------------------
+PARAMETER_S ::= Seq of PARAMETER;
+
+PARAMETER ::= parameter
+	   => lx_name : (java.lang.String),
+              lx_optional : (java.lang.Boolean),
+              as_value : TERM;
+
+parameter =>;
+
+----------------------------------------------------
+--                   SYMBOL
+ ----------------------------------------------------
+SYMBOL ::= symbol 
+         | meta_symbol_reference;
+
+symbol => lx_value : (java.lang.String), lx_hashcode : (int);
+
+meta_symbol_reference => lx_name : (java.lang.String),
+	                 sm_value : SYMBOL;
+
+
+
+
+

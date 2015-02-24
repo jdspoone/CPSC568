@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="11.5.1">
+  <zoom_level>9</zoom_level>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>99</x>
+      <y>45</y>
+      <w>189</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;nested class&gt;&gt;
+BaseType:Role
+--
+-rel: Relation
+-inDomain: TreeSet&lt;Type&gt;
+-inRange: TreeSet&lt;Type&gt;
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>396</x>
+      <y>18</y>
+      <w>90</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>SimpleClass
+--
+roles: TreeMap&lt;String,Role&gt;
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>261</x>
+      <y>18</y>
+      <w>152</w>
+      <h>53</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+m1=0..n
+r1=Role</panel_attributes>
+    <additional_attributes>27;36;135;27</additional_attributes>
+  </element>
+</diagram>

@@ -1,0 +1,1023 @@
+options {
+    FORCE_LA_CHECK = true;
+    ERROR_REPORTING = true;
+//    UNICODE_INPUT = true;
+    IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(SLParser)
+
+package jade.semantics.lang.sl.parser;
+
+import jade.semantics.lang.sl.grammar.*;
+import jade.semantics.lang.sl.tools.SL;
+import jade.util.leap.HashMap;
+import jade.util.leap.ArrayList;
+
+//=============================================================
+//                      Parser declaration
+//=============================================================
+public class SLParser 
+{
+  static final String META_EXCEPTION_MESSAGE               = "Meta SL expressions are not allowed";
+  static final String INCONSISTENT_META_OCCURRENCE_MESSAGE = "Inconsistent meta-reference occurrence";
+  static final String INVALID_PREDICATE_MESSAGE            = "Invalid predicate";
+  static final String INVALID_REFERENCE_CONTEXT_MESSAGE    = "Invalid context for reference";
+
+  static final int FUNCTIONNAL_TERM                     = 0;
+  static final int PREDICATE                            = 1;
+
+  static final int CONTENT_EXPRESSION_REFERENCE         = 0;
+  static final int FORMULA_REFERENCE                    = 1;
+  static final int SYMBOL_REFERENCE                     = 2;
+  static final int TERM_REFERENCE                       = 3;
+  static final int VARIABLE_REFERENCE                   = 4;
+  
+  //------------------------------------------------------------
+  // SLParser is a singleton
+  //------------------------------------------------------------
+  static SLParser _instance = null;
+
+  static public SLParser getParser() 
+  {
+      if ( _instance == null ) {
+	  _instance = new SLParser();
+      }
+      return _instance;
+  }
+
+  //------------------------------------------------------------
+  // SLParser as a SLParser
+  //------------------------------------------------------------
+  boolean _extended = false;
+  HashMap _metaReferences;
+
+  public SLParser()
+  {
+      this(new java.io.InputStreamReader(System.in));
+  }
+  
+  
+    public synchronized ListOfFormula parseFormulas(java.io.Reader stream, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      ReInit(stream);
+      initParser(extended);
+      return ListOfFormula();	
+  }
+
+  public synchronized ListOfFormula parseFormulas(java.io.Reader stream) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseFormulas(stream, false);	
+  }
+  
+  
+
+  public synchronized Content parseContent(java.io.Reader stream, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      ReInit(stream);
+      initParser(extended);
+      return Content(new ArrayList());	
+  }
+
+  public synchronized Content parseContent(java.io.Reader stream) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseContent(stream, false);	
+  }
+
+  public synchronized Content parseContent(String content, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseContent(new java.io.StringReader(content), extended);
+  }
+
+  public synchronized Content parseContent(String content) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseContent(new java.io.StringReader(content));
+  }
+
+  public synchronized FunctionalTerm parseAgent(java.io.Reader stream, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      ReInit(stream);
+      initParser(extended);
+      return (FunctionalTerm)FunctionalTermOrPredicate(FUNCTIONNAL_TERM, new ArrayList(), 0);
+  }
+
+  public synchronized FunctionalTerm parseAgent(java.io.Reader stream) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+	return parseAgent(stream, false);
+  }	
+
+  public synchronized FunctionalTerm parseAgent(String term, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+	return parseAgent(new java.io.StringReader(term), extended);
+  }
+
+  public synchronized FunctionalTerm parseAgent(String term) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+	return parseAgent(new java.io.StringReader(term));
+  }
+
+  public synchronized Term parseTerm(java.io.Reader stream, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      ReInit(stream);
+      initParser(extended);
+      return Term(new ArrayList(), 0);
+  }
+
+  public synchronized Term parseTerm(java.io.Reader stream) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseTerm(stream, false);
+  }
+
+  public synchronized Term parseTerm(String term, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseTerm(new java.io.StringReader(term), extended);
+  }
+
+  public synchronized Term parseTerm(String term) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseTerm(new java.io.StringReader(term));
+  }
+
+  public synchronized Formula parseFormula(java.io.Reader stream, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      ReInit(stream);
+      initParser(extended);
+      return Formula(new ArrayList());
+  }
+
+  public synchronized Formula parseFormula(java.io.Reader stream) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseFormula(stream, false);
+  }
+
+  public synchronized Formula parseFormula(String formula, boolean extended) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseFormula(new java.io.StringReader(formula), extended);
+  }
+
+  public synchronized Formula parseFormula(String formula) 
+      throws ParseException
+  //------------------------------------------------------------
+  {
+      return parseFormula(new java.io.StringReader(formula));
+  }
+
+  private void initParser(boolean extended) {
+      _extended = extended;
+      if (_metaReferences == null) _metaReferences = new HashMap();
+      _metaReferences.clear();
+  }
+  
+  private Variable getVariableFromContext(String varName, int quantifierIndex, ArrayList vars) {
+      for (int i=vars.size() - 1 ; i>=quantifierIndex ; i--) {
+          if (((Variable)vars.get(i)).lx_name().equals(varName)) {
+              return (Variable)vars.get(i);
+          }
+      }
+      Variable var = new VariableNode(varName);
+      vars.add(var);
+      return var;
+  }
+  
+  private void restoreSize(ArrayList list, int size) {
+      for (int i=list.size()-1 ; i>=size ; i--) {
+          list.remove(i);
+      }
+  }
+}
+
+PARSER_END(SLParser)
+
+//=============================================================
+//                        Token declaration
+//=============================================================
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+| <"#" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+| <"/*" (~["*"])* "*" (~["/"] (~["*"])* "*")* "/">
+}
+
+TOKEN : 
+{ 
+  < #AOP : (" "|"\t"|"\n"|"(") >
+| < OPEN_BRACKET:       "(" (" "|"\t"|"\n")* >
+| < CLOSE_BRACKET:      (" "|"\t"|"\n")* ")" >
+| < PIPEKW: 		    	<OPEN_BRACKET> "|" > 
+| < EQUALSKW: 		    	<OPEN_BRACKET> "=" >
+| < SEMICOLONKW: 	    		<OPEN_BRACKET> ";" >
+| < METAPIPEKW:   	    	<OPEN_BRACKET> "::|" >
+| < METAOPTIONKW:       	<OPEN_BRACKET> "::?" >
+| < BELIEVEKW: 		    	<OPEN_BRACKET> "b"        <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < CONTENTKW: 		    	<OPEN_BRACKET> "content"  <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < UNCERTAINTYKW: 	    	<OPEN_BRACKET> "u"        <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < INTENTIONKW: 	    		<OPEN_BRACKET> "i"        <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < PERSISTENTGOALKW: 		<OPEN_BRACKET> "pg"       <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < ORKW: 		     		<OPEN_BRACKET> "or"       <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < ANDKW: 		  	      <OPEN_BRACKET> "and"      <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < NOTKW: 			      <OPEN_BRACKET> "not"      <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < SETKW: 		   	     	<OPEN_BRACKET> "set"  >    /* <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);} */
+| < ALLKW: 	        	 	<OPEN_BRACKET> "all"      <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < ANYKW: 	      	  	<OPEN_BRACKET> "any"      <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < IOTAKW: 	    		<OPEN_BRACKET> "iota"     <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < SOMEKW: 	    		<OPEN_BRACKET> "some"     <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < DONEKW: 	    		<OPEN_BRACKET> "done"     <AOP> >  {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < TRUEKW: 	        	"true" >
+| < EQUIVKW: 		    	<OPEN_BRACKET> "equiv"    <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < FALSEKW: 		    	"false" >
+| < OBLIGATIONKW:		<OPEN_BRACKET> "o" 	 <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < COUNTASKW:		<OPEN_BRACKET> "countas" <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < INSTFACTKW:		<OPEN_BRACKET> "d"	 <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < FACTKW:			<OPEN_BRACKET> "fact"	 <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < ACTIONKW: 		    	<OPEN_BRACKET> "action"   <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < RESULTKW: 		    	<OPEN_BRACKET> "result"   <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < EXISTSKW: 		    	<OPEN_BRACKET> "exists"   <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < FORALLKW: 		    	<OPEN_BRACKET> "forall"   <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < IMPLIESKW: 		    	<OPEN_BRACKET> "implies"  <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < FEASIBLEKW: 	    		<OPEN_BRACKET> "feasible" <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);}
+| < SEQUENCEKW: 	    		<OPEN_BRACKET> "sequence" > /* <AOP> > {if (matchedToken.image.endsWith("(")) input_stream.backup(1);} */
+}
+
+TOKEN : /* VARIABLE and PARAMETER NAME */
+{
+  < PARAMETER_NAME: ":"(<STRING_LITERAL>|<BYTES>|<WORD>) >
+| < VARIABLE: "?"(<STRING_LITERAL>|<BYTES>|<WORD>) >
+| < META_VARIABLE: "??"(<INTEGER>(<WORD>)?|<WORD>) >
+}
+
+TOKEN : /* INTEGER */
+{
+  < INTEGER: ((<SIGN>)?(<DEC_LITERAL>)+)|((<SIGN>)?"0"["x","X"](<HEX_LITERAL>)+) >
+| < #SIGN: ["+","-"] >
+| < #HEX_LITERAL: ["0"-"9","A"-"F","a"-"f"] >
+}
+
+TOKEN : /* FLOAT */
+{
+  < FLOAT: ((<SIGN>)?<MANTISSA>(<EXPONENT>)?)|((<SIGN>)?(<DEC_LITERAL>)+<EXPONENT>) >
+| < #MANTISSA: ((<DEC_LITERAL>)+"."(<DEC_LITERAL>)*)|((<DEC_LITERAL>)*"."(<DEC_LITERAL>)+) >
+| < #EXPONENT:(["e","E"])(<SIGN>)?(<DEC_LITERAL>)+ >
+}
+
+TOKEN : /* DATE_TIME */
+{
+  < DATE_TIME: (<SIGN>)?<YEAR><MONTH><DAY>"T"<HOUR><MINUTE><SECOND><MILLISECOND>(<TYPE_DESIGNATOR>)? >
+| < #YEAR: <DEC_LITERAL><DEC_LITERAL><DEC_LITERAL><DEC_LITERAL> >
+| < #MONTH: <DEC_LITERAL><DEC_LITERAL> >
+| < #DAY: <DEC_LITERAL><DEC_LITERAL> >
+| < #HOUR: <DEC_LITERAL><DEC_LITERAL> >
+| < #MINUTE: <DEC_LITERAL><DEC_LITERAL> >
+| < #SECOND: <DEC_LITERAL><DEC_LITERAL> >
+| < #MILLISECOND: <DEC_LITERAL><DEC_LITERAL><DEC_LITERAL> >
+| < #TYPE_DESIGNATOR: ["a"-"z","A"-"Z"] >
+}
+
+TOKEN : /* STRING */
+{
+  < STRING_LITERAL: "\""( ~["\""]|"\\\"")* "\"" >
+| < WORD:  "-" | <QUOTED_WORD> | <NOT_QUOTED_WORD> >
+| < BYTES:  "#"(<DEC_LITERAL>)+"\"" >
+| < #DEC_LITERAL: ["0"-"9"] >
+| < #QUOTED_WORD : "'"(~["'"])* "'">
+| < #NOT_QUOTED_WORD : ~["\u0000"-"\u0020","\"", "(", ")", "#", "0" - "9", ":", "-", "?"](~["\u0000"-"\u0020","\"", "(", ")"])* >
+}
+
+//=============================================================
+//                       Rules declaration
+//=============================================================
+
+// -------------------------------------------------------------
+ListOfFormula ListOfFormula() : 
+// -------------------------------------------------------------
+{
+    ListOfFormula list = new ListOfFormula();
+    Formula formula;
+}
+{
+  ( formula = Formula(new ArrayList())
+    {
+         list.add(formula);
+         _metaReferences.clear();
+    } ) +
+  {
+	return list;
+  }
+}
+
+// -------------------------------------------------------------
+Content Content(ArrayList variables) : 
+// -------------------------------------------------------------
+{
+    ContentNode content = new ContentNode(new ListOfContentExpression());
+    ContentExpression expression;
+}
+{
+  ( (<OPEN_BRACKET>|<CONTENTKW>)
+    ( expression = ContentExpression (variables)
+    {
+         content.as_expressions().add(expression);
+    } ) +
+    <CLOSE_BRACKET> 
+  )
+  {
+	return content;
+  }
+}
+
+// -------------------------------------------------------------
+ContentExpression ContentExpression(ArrayList variables) : 
+// -------------------------------------------------------------
+{
+    ActionExpression action_expression;
+    IdentifyingExpression identifying_expression;
+    Formula formula;
+    Node meta;
+}
+{ (  meta = MetaVariable(CONTENT_EXPRESSION_REFERENCE) 
+     {
+	   return (MetaContentExpressionReferenceNode)meta;
+     }
+   | 
+     action_expression = ActionExpression(variables)
+     {
+	    return new ActionContentExpressionNode(action_expression);
+     } 
+   | identifying_expression = IdentifyingExpression(variables)
+     {
+        return new IdentifyingContentExpressionNode(identifying_expression);
+     } 
+   |
+     formula = Formula(variables)
+     {
+	    return new FormulaContentExpressionNode(formula);
+	 }
+  )
+}
+
+// -------------------------------------------------------------
+ActionExpression ActionExpression(ArrayList variables) :
+// -------------------------------------------------------------
+{
+    Term left_action;
+    Term right_action;
+    Term agent;
+    Term term;
+    Term action;
+    AlternativeActionExpressionNode alt;
+    SequenceActionExpressionNode seq;
+     
+}
+{  ( ( <ACTIONKW> agent = Term(variables, 0) term = Term(variables, 0) <CLOSE_BRACKET>
+     {
+         return new ActionExpressionNode(agent, term);
+     })
+   | ( <PIPEKW> left_action = Term(variables, 0) right_action = Term(variables, 0) 
+       {
+       	alt = new AlternativeActionExpressionNode(left_action, right_action);
+       }
+       (action = Term(variables, 0)
+        {
+        	alt = new AlternativeActionExpressionNode(alt, action);
+        })* <CLOSE_BRACKET>
+     {
+        return alt;
+     }) 
+   | ( <SEMICOLONKW> left_action = Term(variables, 0) right_action = Term(variables, 0) 
+   	   {
+      	seq = new SequenceActionExpressionNode(left_action, right_action);
+   	   }
+       (action = Term(variables, 0)
+        {
+        	seq = new SequenceActionExpressionNode(seq, action);
+        })* <CLOSE_BRACKET>
+     {
+        return seq;
+     }) 
+   )
+}
+
+// -------------------------------------------------------------
+IdentifyingExpression IdentifyingExpression(ArrayList variables) :
+// -------------------------------------------------------------
+{
+    Term term;
+    Formula formula;
+    int varStackSize;
+}
+{  (  ( <IOTAKW>
+       {
+          varStackSize = variables.size();
+       }
+       term = Term(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+       {
+          restoreSize(variables, varStackSize);
+          return new IotaNode(term, formula);
+       })
+    | ( <ALLKW>
+       {
+          varStackSize = variables.size();
+       }
+       term = Term(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+       {
+          restoreSize(variables, varStackSize);
+          return new AllNode(term, formula);
+       })
+    | ( <ANYKW>
+       {
+          varStackSize = variables.size();
+       }
+       term = Term(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+       {
+          restoreSize(variables, varStackSize);
+          return new AnyNode(term, formula);
+       }) 
+       
+    | ( <SOMEKW>
+       {
+          varStackSize = variables.size();
+       }
+       term = Term(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+       {
+          restoreSize(variables, varStackSize);
+          return new SomeNode(term, formula);
+       }) 
+    )
+}
+
+// -------------------------------------------------------------
+Formula Formula(ArrayList variables) :
+// -------------------------------------------------------------
+{
+    AtomicFormula atomic_formula;
+    Term action;
+    Formula formula = null;
+    Formula left_formula;
+    Formula right_formula;
+    AndNode and;
+    OrNode or;
+    Term agent;
+    Variable variable;
+    Node meta;
+    int varStackSize;
+    Term institution;
+}
+{  ( meta = MetaVariable(FORMULA_REFERENCE) 
+     {
+	   return (MetaFormulaReferenceNode)meta;
+     }
+   | atomic_formula = AtomicFormula(variables)
+     {
+	     return atomic_formula;
+     } 
+   | ( <DONEKW> action = Term(variables, 0) ( formula = Formula(variables) ) ? <CLOSE_BRACKET>
+     {
+        return new DoneNode(action, formula==null?SL.TRUE:formula);
+     } )
+   | ( <FEASIBLEKW> action = Term(variables, 0) ( formula = Formula(variables) ) ? <CLOSE_BRACKET>
+     {
+        return new FeasibleNode(action, formula==null?SL.TRUE:formula);
+     } )
+   | ( <NOTKW> formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new NotNode(formula);
+     } )
+   | ( <ANDKW> left_formula = Formula(variables) right_formula = Formula(variables)
+       {
+       	and = new AndNode(left_formula, right_formula);
+       }
+       (formula = Formula(variables) 
+       {
+       	and = new AndNode(and, formula);
+       })* <CLOSE_BRACKET>
+     {
+        return and;
+     } )
+   | ( <ORKW> left_formula = Formula(variables) right_formula = Formula(variables) 
+   	   {
+       	or = new OrNode(left_formula, right_formula);
+       }
+   	   (formula = Formula(variables)
+   	   {
+   	   	or = new OrNode(or, formula);
+   	   })* <CLOSE_BRACKET>
+     {
+        return or;
+     } )
+   | ( <IMPLIESKW> left_formula = Formula(variables) right_formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new ImpliesNode(left_formula, right_formula);
+     } )
+   | ( <EQUIVKW> left_formula = Formula(variables) right_formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new EquivNode(left_formula, right_formula);
+     } )
+   | ( <EXISTSKW>
+     {
+        varStackSize = variables.size();
+     }
+     variable = Variable(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        restoreSize(variables, varStackSize);
+        return new ExistsNode(variable, formula);
+     } )
+   | ( <FORALLKW>
+     {
+        varStackSize = variables.size();
+     }
+     variable = Variable(variables, varStackSize) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        restoreSize(variables, varStackSize);
+        return new ForallNode(variable, formula);
+     } )
+   | ( <BELIEVEKW> agent = Term(variables, 0) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new BelieveNode(agent, formula);
+     } )
+   | ( <UNCERTAINTYKW> agent = Term(variables, 0) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new UncertaintyNode(agent, formula);
+     } )
+   | ( <INTENTIONKW> agent = Term(variables, 0) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new IntentionNode(agent, formula);
+     } )
+   | ( <PERSISTENTGOALKW> agent = Term(variables, 0) formula = Formula(variables) <CLOSE_BRACKET>
+     {
+        return new PersistentGoalNode(agent, formula);
+     } )
+   | ( <OBLIGATIONKW> formula = Formula(variables) <CLOSE_BRACKET>
+	{
+		return new ObligationNode(formula);
+	} )
+   | ( <COUNTASKW> institution = Term(variables,0) left_formula = Formula(variables) right_formula = Formula(variables) <CLOSE_BRACKET>
+	{
+		return new CountAsNode(institution,left_formula,right_formula);
+	} )
+   | ( <INSTFACTKW> institution = Term(variables,0) formula = Formula(variables) <CLOSE_BRACKET>
+	{
+		return new InstitutionalFactNode(institution,formula);
+	} )
+  )
+}
+
+// -------------------------------------------------------------
+AtomicFormula AtomicFormula(ArrayList variables) :
+// -------------------------------------------------------------
+{
+    Node predicate;
+    Symbol symbol;
+    Term term1, term2;
+}
+{  ( symbol = Symbol()
+     {
+        return new PropositionSymbolNode(symbol);
+     } 
+   | ( <RESULTKW> term1 = Term(variables, 0) term2 = Term(variables, 0) <CLOSE_BRACKET>
+     {
+        return new ResultNode(term1, term2);
+     })
+   | ( <EQUALSKW> term1 = Term(variables, 0) term2 = Term(variables, 0) <CLOSE_BRACKET>
+     {
+        return new EqualsNode(term1, term2);
+     })
+   | ( predicate = FunctionalTermOrPredicate(PREDICATE, variables, 0)
+     {
+        return (PredicateNode)predicate;
+     })
+   | ( <TRUEKW>
+     {
+//        TrueNode trueNode = new TrueNode();
+//        trueNode.sm_simplified_formula(trueNode);
+        return SL.TRUE;
+     })
+   | ( <FALSEKW>
+     {
+//        FalseNode falseNode = new FalseNode();
+//        falseNode.sm_simplified_formula(falseNode);
+        return SL.FALSE;
+     })
+  )
+}
+
+// -------------------------------------------------------------
+ListOfTerm Terms(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    ListOfTerm terms = new ListOfTerm();
+    Term term;
+}
+{  ( term = Term(variables, quantifierIndex)
+     {
+        terms.add(term);
+     } )+
+    {
+       return terms;
+    }
+}
+
+// -------------------------------------------------------------
+Symbol Symbol() :
+// -------------------------------------------------------------
+{
+    Node meta;
+    Token token;
+    
+}
+{  ( meta = MetaVariable(SYMBOL_REFERENCE) 
+     {
+		return (MetaSymbolReferenceNode)meta;
+     } 
+   | (token = <STRING_LITERAL>| token = <BYTES>| token = <WORD>)
+     {
+		return SL.symbol(token.image);
+     } 
+   )
+}
+
+// -------------------------------------------------------------
+String String() :
+// -------------------------------------------------------------
+{
+    Token token;
+}
+{  ( token = <STRING_LITERAL>
+     {
+	return token.image;
+     } 
+    | token = <BYTES>
+     {
+	return token.image;
+     } 
+    | token = <WORD> 
+     {
+		return token.image;
+     }
+   )
+}
+
+
+
+// -------------------------------------------------------------
+Term Term(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    Constant constant;
+    TermSet term_set;
+    TermSequence term_sequence;
+    Node functional_term;
+    ActionExpression action_expression;
+    IdentifyingExpression identifying_expression;
+    Variable variable;
+    Content content;
+    ContentExpression expression;
+    Node meta;
+    Formula formula;
+}
+{  ( meta = MetaVariable(TERM_REFERENCE) 
+     {
+	 return (Term)meta;
+     } 
+   | constant = Constant()
+     {
+        return constant;
+     } 
+   | term_set = TermSet(variables, quantifierIndex)
+     {
+        return term_set;
+     }
+   | term_sequence = TermSequence(variables, quantifierIndex)
+     {
+        return term_sequence;
+     }
+   | functional_term = FunctionalTermOrPredicate(FUNCTIONNAL_TERM, variables, quantifierIndex)
+     {
+        return (FunctionalTerm)functional_term;
+     }
+   | action_expression = ActionExpression(variables)
+     {
+	    return action_expression;
+     } 
+   | identifying_expression = IdentifyingExpression(variables)
+     {
+        return identifying_expression;
+     } 
+   | variable = Variable(variables, quantifierIndex)
+     {
+	     return variable;
+     } 
+   | (<FACTKW> formula = Formula(variables) <CLOSE_BRACKET>)
+	{
+		return new FactNode(formula);
+	}
+   | (<CONTENTKW> 
+       {
+     	  content = new ContentNode(new ListOfContentExpression());
+       }
+       ( expression = ContentExpression (variables)
+         {
+       	    content.as_expressions().add(expression);
+         } ) +
+      <CLOSE_BRACKET>)
+     {
+	 	return content;
+     } 
+   )
+}
+
+// -------------------------------------------------------------
+Constant Constant() :
+// -------------------------------------------------------------
+{
+    Token token;
+}
+{  ( token = <STRING_LITERAL>
+     {
+        String s = token.image.substring(1,token.image.length()-1);
+	String value = new String();
+	for (int i=0; i<s.length(); i++) {
+	    if ( i<s.length()-1 &&
+	         s.charAt(i) == '\\' && 
+	         (s.charAt(i+1) == '\"' || s.charAt(i+1) == '\\' ) ) {
+		i++;
+	    }
+	    value += s.charAt(i);
+	}
+	return SL.string(value);
+     } 
+   | token = <WORD>
+     {
+     	if ( token.image.charAt(0) == '\'' ) {
+ 	       return SL.word(token.image.substring(1, token.image.length()-1));
+ 	    }
+ 	    else {
+ 	       return SL.word(token.image);
+ 	    }
+     } 
+   | token = <BYTES>
+     {
+        int n = Integer.parseInt(token.image.substring(1, token.image.length()-1));
+		char[] chars = new char[n];	
+		try {
+			  jj_input_stream.readChars(chars);
+//			  for (int i=0; i<n;i++) {chars[i] = jj_input_stream.readChar();}
+// WARNING : the original call of readChar has been replaced by the call of a special
+// method introduced by Vincent Louis and Thierry Martinez, called
+// readChars, into the SimpleCharStream class. This method allows to read all characters
+// of a byte constant in one single method invocation, which is really more efficient to read
+// huge byte constants, such as images for example. 
+// For safety reason, the SimpleCharStream.java file is also stored in a file
+// called SimpleCharStream.java.dontoverride. This file can be used to recover the 
+// readChars method if SimpleCharStream.java is regenerated by JavaCC.
+// 
+		}
+		catch(Exception e) {e.printStackTrace();}
+		return SL.bytes(Base64.decode(chars));
+      }
+   | token = <FLOAT>
+     {
+        return SL.real(token.image);
+     }
+   | token = <INTEGER>
+     {
+        return SL.integer(token.image);
+     }
+   | token = <DATE_TIME>
+     {
+     	return SL.date(token.image);
+     }
+   )
+}
+
+// -------------------------------------------------------------
+TermSet TermSet(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    ListOfTerm terms = null;
+}
+{  ( <SETKW> ( terms = Terms(variables, quantifierIndex) ) ? <CLOSE_BRACKET>
+     {
+	 return new TermSetNode(terms==null ? new ListOfTerm() : terms);
+     } )
+}
+
+// -------------------------------------------------------------
+TermSequence TermSequence(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    ListOfTerm terms = null;
+}
+{  ( <SEQUENCEKW> ( terms = Terms(variables, quantifierIndex) ) ? <CLOSE_BRACKET>
+     {
+	 return new TermSequenceNode(terms==null ? new ListOfTerm() : terms);
+     } )
+}
+
+// -------------------------------------------------------------
+Node FunctionalTermOrPredicate(int which, ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    Symbol symbol;
+    ListOfTerm terms = null;
+    ListOfParameter parameters = null;
+}
+{  ( ( <OPEN_BRACKET> symbol = Symbol() ( terms = Terms(variables, quantifierIndex) | parameters = Parameters(variables, quantifierIndex) ) ? <CLOSE_BRACKET> )
+     {
+	if ( which == FUNCTIONNAL_TERM ) {
+	    if ( parameters == null ) {
+	    	if ( terms == null ) {
+				return new FunctionalTermParamNode(symbol, new ListOfParameter());
+	    	}
+	    	else {
+				return new FunctionalTermNode(symbol, terms==null ? new ListOfTerm() : terms);
+			}
+	    }
+	    else {
+			return new FunctionalTermParamNode(symbol, parameters);
+	    }
+	}
+	else /* which == PREDICATE */ {
+	    if ( parameters == null ) {
+			return new PredicateNode(symbol, terms==null ? new ListOfTerm() : terms);
+	    }
+	    else {
+			throw new ParseException(INVALID_PREDICATE_MESSAGE);
+	    }
+	}
+     } )
+}
+
+// -------------------------------------------------------------
+ListOfParameter Parameters(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    ListOfParameter parameters = new ListOfParameter();
+    Parameter parameter;
+}
+{  ( parameter = Parameter(variables, quantifierIndex)
+     {
+        parameters.add(parameter);
+     } )+
+    {
+       return parameters;
+    }
+}
+
+// -------------------------------------------------------------
+Parameter Parameter(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    Token token;
+    Term term;
+}
+{  ( (token = <PARAMETER_NAME> term = Term(variables, quantifierIndex) 
+     {
+	  return new ParameterNode(term, token.image.substring(1), Boolean.FALSE);
+     }) 
+     |
+     (<METAOPTIONKW> token = <PARAMETER_NAME> term = Term(variables, quantifierIndex) <CLOSE_BRACKET> 
+     {
+ 	 	if ( !_extended ) {throw new ParseException(META_EXCEPTION_MESSAGE);}
+ 	 	return new ParameterNode(term, token.image.substring(1), Boolean.TRUE);
+     })
+   )
+}
+
+// -------------------------------------------------------------
+Variable Variable(ArrayList variables, int quantifierIndex) :
+// -------------------------------------------------------------
+{
+    Node meta;
+    Token token;
+}
+{  ( meta = MetaVariable(VARIABLE_REFERENCE) 
+     {
+	 return (MetaVariableReferenceNode)meta;
+     }
+    | token = <VARIABLE>
+     {
+        return getVariableFromContext(token.image.substring(1), quantifierIndex, variables);
+     }
+   )
+}
+
+// -------------------------------------------------------------
+Node MetaVariable(int which) :
+// -------------------------------------------------------------
+{
+    Token token;
+}
+{  ( token = <META_VARIABLE>
+     {
+	 if ( !_extended ) {throw new ParseException(META_EXCEPTION_MESSAGE);}
+	 
+	 String metaReferenceName = token.image.substring(2);
+	 Node metaReference = (Node)_metaReferences.get(metaReferenceName);
+	 
+	 if ( which == CONTENT_EXPRESSION_REFERENCE ) {
+	     if (metaReference == null) {
+	         MetaContentExpressionReferenceNode result = new MetaContentExpressionReferenceNode(metaReferenceName);
+	         _metaReferences.put(metaReferenceName, result);
+	         return result;
+	     }
+	     else {
+	         if (metaReference instanceof MetaContentExpressionReferenceNode) {
+	             return metaReference;
+	         }
+	         else throw new ParseException(INCONSISTENT_META_OCCURRENCE_MESSAGE + " ??" + metaReferenceName);
+	     }
+	 }
+	 else if ( which == FORMULA_REFERENCE ) {
+	     if (metaReference == null) {
+	         MetaFormulaReferenceNode result = new MetaFormulaReferenceNode(metaReferenceName);
+	         _metaReferences.put(metaReferenceName, result);
+	         return result;
+	     }
+	     else {
+	         if (metaReference instanceof MetaFormulaReferenceNode) {
+	             return metaReference;
+	         }
+	         else throw new ParseException(INCONSISTENT_META_OCCURRENCE_MESSAGE + " ??" + metaReferenceName);
+	     }
+	 }
+	 else if ( which == SYMBOL_REFERENCE ) {
+	     if (metaReference == null) {
+	         MetaSymbolReferenceNode result = new MetaSymbolReferenceNode(metaReferenceName);
+	         _metaReferences.put(metaReferenceName, result);
+	         return result;
+	     }
+	     else {
+	         if (metaReference instanceof MetaSymbolReferenceNode) {
+	             return metaReference;
+	         }
+	         else throw new ParseException(INCONSISTENT_META_OCCURRENCE_MESSAGE + " ??" + metaReferenceName);
+	     }
+	 }
+	 else if ( which == TERM_REFERENCE ) {
+	     if (metaReference == null) {
+	         MetaTermReferenceNode result = new MetaTermReferenceNode(metaReferenceName);
+	         _metaReferences.put(metaReferenceName, result);
+	         return result;
+	     }
+	     else {
+	         if (metaReference instanceof MetaTermReferenceNode || metaReference instanceof MetaVariableReferenceNode) {
+	             return metaReference;
+	         }
+	         else throw new ParseException(INCONSISTENT_META_OCCURRENCE_MESSAGE + " ??" + metaReferenceName);
+	     }
+	 }
+	 else if ( which == VARIABLE_REFERENCE ) {
+	     if (metaReference == null) {
+	         MetaVariableReferenceNode result = new MetaVariableReferenceNode(metaReferenceName);
+	         _metaReferences.put(metaReferenceName, result);
+	         return result;
+	     }
+	     else {
+	         if (metaReference instanceof MetaVariableReferenceNode || metaReference instanceof MetaTermReferenceNode) {
+	             return metaReference;
+	         }
+	         else throw new ParseException(INCONSISTENT_META_OCCURRENCE_MESSAGE + " ??" + metaReferenceName);
+	     }
+	 }
+	 else {
+	     throw new ParseException(INVALID_REFERENCE_CONTEXT_MESSAGE);
+	 }
+     } )
+}

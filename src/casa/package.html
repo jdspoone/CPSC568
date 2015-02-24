@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head></head>
+
+<body bgcolor="white">
+The casa package is the main package for CASA (Collaborative Agent System 
+Architecture), which is an infrastructure for agent based systems.
+
+<P>See <a href="doc-files/index.html" target="CASA">CASA overview documentation</a>.</P>
+
+The important classes if you interested in implementing agents are:
+<ul>
+<li> {@link casa.Agent} a persistent, full-functioning agent.  You should inherit
+     from this class when building most agents.
+<li> {@link casa.ML} An interface containing constant strings used in MLMesssage.
+<li> {@link casa.MLMessage} Base class for {@link casa.XMLMessage}
+     and {@link casa.KQMLMessage}.  Contains the most basic, necessary functions
+     for a markup message in the CASA package.  Also contains functionality for
+     interfacing with XML and KQML messages. That is, the field markupLanguage
+     determines the type of message (XML/KQML) to be returned by the
+     getNewMLMessage function.  This is basically a key/value map where
+     the keys represent the message field names, and the values represent
+     the corresponding values.
+<li> {@link casa.URLDescriptor} represents URL strings are of the form
+     casa://user@host:port/dir/file#fragment?key=value&key=value.  Agent
+     communication and messages use URLs to identify all agents.
+<li> {@link casa.PerformDescriptor} A simple description consisting of key/value pairs.
+     It is an extension of {@link java.util.TreeMap} with a {@link casa.Status} properties added.
+     PerformDescriptor is usually used to return information from an agent processing
+     a message.  The policies call callback methods to allow the agent to process
+     the message appropriately (if at all), and use the information returned in
+     the PerformDescriptor to modify behaviour.  For example, if a <em>reply</em>
+     is normally called for, the type of the reply will be modified depending on
+     the Status object in the returned PerformDescriptor, but the key/value pairs
+     always override whatever the "normative" key/value pairs in any reply
+     message.
+<li> {@link casa.Status} A simple combination of an status <em>int</em> and a 
+     text description <em>String</em> used to return status values from many
+     methods.  The value part's meaning is taken to be:
+     <ul>
+     <li>&lt;0: error (an explanation is expected int String description part)
+     <li>0: success
+     <li>&gt;0: warning (a qualified success, usually with some explanation)
+     </ul>
+</ul>
+
+<table border="1"><tr><td>
+Copyright: Copyright (c) 2002, Knowledge Science Group, University of Calgary.
+Permission to use, copy, modify, distribute and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that copyright
+notice and this permission notice appear in supporting documentation.  The
+Knowledge Science Group makes no representations about the suitability of
+this software for any purpose.  It is provided "as is" without express or
+implied warranty.
+</td></tr></table>
+
+<!-- Put @see and @since tags here. --> 
+</body>
+</html>

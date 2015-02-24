@@ -1,0 +1,1054 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+</head>
+<body>
+<table border="1">
+  <tbody>
+    <tr>
+      <td>Copyright: Copyright (c) 2003, Knowledge Science Group,
+University of Calgary.
+Permission to use, copy, modify, distribute and sell this software and
+its
+documentation for any purpose is hereby granted without fee, provided
+that
+the above copyright notice appear in all copies and that both that
+copyright
+notice and this permission notice appear in supporting documentation.
+The
+Knowledge Science Group makes no representations about the suitability
+of
+this software for any purpose. It is provided "as is" without express
+or
+implied warranty.</td>
+    </tr>
+  </tbody>
+</table>
+<h1>CASA Messages</h1>
+<p>CASA messages are pure-text messages used by agents to communicate
+with
+one another. CASA mesages are represented in the software by the class
+<a href="../MLMessage.html">MLMessage</a>. Currently, CASA supports
+either
+XML or KQML formats for messages
+(see classes <a href="../XMLMessage.html">XMLMessage</a> and
+<a href="../KQMLMessage.html">KQMLMessage</a>).</p>
+<p>The following table summarizes the CASA message fields:</p>
+<table border="1" cellpadding="3">
+  <tbody>
+    <tr bgcolor="yellow">
+      <th>Field</th>
+      <td style="vertical-align: top;">Stardard<br>
+      </td>
+      <th>Requiried?</th>
+      <th>Type</th>
+      <th>Comments</th>
+    </tr>
+    <tr>
+      <td><b><a href="#performative">performative</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a><br>
+      </td>
+      <td>required</td>
+      <td>token</td>
+      <td>the speach act this message represents. The token must occur in the casa ontology as a sub-type of <em>performative</em>.</td>
+    </tr>
+    <tr>
+      <td><b><a href="#act">act</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td>token-list</td>
+      <td>the physical act (the "topic" of this message). The token must occur in the casa ontology as a sub-type of <em>action</em>. (<em>performative</em> &lt;: <em>action</em>)</td>
+    </tr>
+    <tr>
+      <td><b><a href="#sender">sender</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>optional but suggested<br>
+      </td>
+      <td><a
+ href="file:///C:/Apple/CASA/v016/src/casa/doc-files/URLs.html">URL</a>&nbsp;</td>
+      <td>the immediate sender of the message. &nbsp; May be missing if
+the sending agent wishes to remain annonomous.<span
+ style="color: rgb(102, 51, 102);"></span> </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><b><a
+ href="file:///C:/Apple/CASA/v016/src/casa/doc-files/messages.html#receiver">receiver</a></b></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">required</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a
+ href="file:///C:/Apple/CASA/v016/src/casa/doc-files/URLs.html">URL</a></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">the
+immediate receiver of the
+message.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">reply-to<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">optional<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color: rgb(255, 255, 204);"><b><a href="#to">to</a></b></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+      <td style="background-color: rgb(255, 255, 204);">optional</td>
+      <td style="background-color: rgb(255, 255, 204);">{ { ["+"] <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="URLs.html">URL</a> |<br>
+&nbsp;&nbsp; {"{"{<a
+ href="file:///C:/Apple/CASA/v016/src/casa/doc-files/URLs.html">URL</a>}+"}"}<br>
+&nbsp;&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp; | "*"<br>
+}+</td>
+      <td style="background-color: rgb(255, 255, 204);">path through
+which this message is to follow.&nbsp; Used for forwarding
+messages.&nbsp; This is a list of URLs and URL sets (designated by
+inclosing in {}.&nbsp; URLs listed in serial are taken as sequential
+(the message is passed from one URL to the next); if URLs are enclosed
+in {}, the message is replicated and passed to each one of them in
+parellel; a * has special meaning in Cooperation Domains, and means to
+broadcaste the message to all memebers.<br>
+      </td>
+    </tr>
+    <tr>
+      <td><b><a href="#reply-with">reply-with</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>if |<em>performative</em>| &lt;: <em>request</em></td>
+      <td>string</td>
+      <td>used as a unique marker to match the reply against a request</td>
+    </tr>
+    <tr>
+      <td><b><a href="#in-reply-to">in-reply-to</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>if |<em>performative</em>| &lt;: <em>reply</em></td>
+      <td>string</td>
+      <td>used to match this reply against a past request</td>
+    </tr>
+    <tr>
+      <td><b><a href="#language">language</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>if <em>content</em> is not empty</td>
+      <td><br>
+      </td>
+      <td>the language in which the <em>content</em> is written</td>
+    </tr>
+    <tr>
+      <td><b><a href="#language-version">language-version</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>if <em>languate</em> is not empty</td>
+      <td><em>digit</em>+{.{<em>digit</em>}+}*</td>
+      <td>the version of the language in which the <em>content</em> is
+written</td>
+    </tr>
+    <tr>
+      <td><b><a href="#ontology">ontology</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>if <em>content</em> is not empty</td>
+      <td><br>
+      </td>
+      <td>the ontology in which the <em>content</em> is written</td>
+    </tr>
+    <tr>
+      <td><b><a href="#ontology-version">ontology-version</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>if <em>ontology</em> is not empty</td>
+      <td><em>digit</em>+{.{<em>digit</em>}+}* </td>
+      <td>the version of the ontology in which the <em>content</em> is
+written</td>
+    </tr>
+    <tr>
+      <td><b><a href="#content">content</a></b></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td><br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a href="#reply-by"><strong>reply-by</strong></a><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><a href="#priority"><span
+ style="font-weight: bold;">priority</span><br>
+      </a></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">optional<br>
+      </td>
+      <td style="vertical-align: top;">int<br>
+      </td>
+      <td style="vertical-align: top;">partially dictates the order in
+which messages are handled.&nbsp; All high priority messages are placed
+ahead of lower priority messages in an agent's incomming message
+queue.&nbsp; Default priority is 0.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><strong><a href="#encoding">encoding</a><br>
+      </strong></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">The content expression might be encoded in several ways. The encoding parameter is optionally used to specify this encoding to the recipient agent</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><strong><a href="@protocol">protocol</a><br>
+      </strong></td>
+      <td style="vertical-align: top;"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">The protocol parameter defines the interaction protocol in which the ACL message is generated.</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">conversation-id<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><a
+ href="http://www.fipa.org/specs/fipa00061/SC00061G.html">FIPA<br>
+      <span lang="EN-GB">SC00061G</span></a></td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">required <br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">Introduces an expression (a conversation identifier) which is used to identify the ongoing sequence of communicative acts that together form a conversation. </td>
+    </tr>
+    <tr bgcolor="#ffff88">
+      <td colspan="5"><b><em>Optional thematic roles (experimental)</em></b></td>
+    </tr>
+    <tr>
+      <td><b><a href="#agent">agent</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the initiator of the act</td>
+    </tr>
+    <tr>
+      <td><b><a href="#patient">patient</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity undergoing the effect of the act</td>
+    </tr>
+    <tr>
+      <td><b><a href="#theme">theme</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity that is moved by the act or whose location is
+described</td>
+    </tr>
+    <tr>
+      <td><b><a href="#experiencer">experiencer</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity that is aware of the action or state (but is not
+in control of the action or state</td>
+    </tr>
+    <tr>
+      <td><b><a href="#beneficiary">beneficiary</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity for whose benefit the action was performed</td>
+    </tr>
+    <tr>
+      <td><b><a href="#instrument">instrument</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the means by which an act is preformed</td>
+    </tr>
+    <tr>
+      <td><b><a href="#location">locataion</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the place in which something is situated or takes place</td>
+    </tr>
+    <tr>
+      <td><b><a href="#goal">goal</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity to which something moves (literally or
+metaphorically</td>
+    </tr>
+    <tr>
+      <td><b><a href="#source">source</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>the entity from which something moves (literally or
+metaphorically</td>
+    </tr>
+    <tr bgcolor="#ffff88">
+      <td colspan="5"><b><em>Optional semantic modifiers (experimental)</em></b></td>
+    </tr>
+    <tr>
+      <td><b><a href="#tense">tense</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td>token</td>
+      <td>{past|present|future}</td>
+    </tr>
+    <tr>
+      <td><b><a href="#aspect">aspect</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td>token</td>
+      <td>{perfect|imperfect|progressive}</td>
+    </tr>
+    <tr>
+      <td><b><a href="#reference-time">reference-time</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td>long</td>
+      <td>absolute time in milliseconds since midnight Dec. 31, 1970,
+GMT that the <em>tense</em> and <em>aspect</em> relate to</td>
+    </tr>
+    <tr>
+      <td><b><a href="#reference-event">reference-event</a></b></td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td>optional</td>
+      <td><br>
+      </td>
+      <td>an event that the <em>tense</em> and <em>aspect</em> relate
+to.</td>
+    </tr>
+  </tbody>
+</table>
+<pre>&nbsp;</pre>
+<hr>
+<a name="performative">
+<h2>Performative field</h2>
+</a>
+<blockquote><em>required.<br>
+Type: token. The token must occur in the casa ontology as a sub-type of <em>performative</em>.</em>
+</blockquote>
+Describes the <em>performtative</em> or <em>speach act</em> of this
+message.
+<p>The perfomatives form a type lattice as follows. For an updated and complete list, refer to <strong>dataFiles/actions.ont.lisp</strong> in the CASA files.</p>
+<img src="performatives.gif">
+<p>Thus, a request is an inform, and a reply is both an inform and an
+ack (acknowledge).
+Furthermore, nothing can be both a request and a reply.</p>
+<p>In addition, a request is always followed by a reply (unless
+something
+goes wrong of course).</p>
+<p>In <em>reliable channel</em> mode, we further declare that every
+inform is to be acknowledged.
+The type lattice above tells use that both requests and replies (and
+all their
+subtypes) must be followed by an ack (in the reverse direction), but
+that a
+reply to a request suffices as an ack.</p>
+<p>Further subtypes supplementing the above lattice are:</p>
+<table>
+  <tbody>
+    <tr>
+      <td>reply</td>
+      <td>- a "normal reply to a request</td>
+    </tr>
+    <tr>
+      <td>|&nbsp;not-understood</td>
+      <td>- a reply to a message that the recipient did not understand</td>
+    </tr>
+    <tr>
+      <td>|&nbsp;error</td>
+      <td>- a reply to a request that could not be fulfilled or was
+otherwise refused</td>
+    </tr>
+    <tr>
+      <td>|&nbsp;timeout</td>
+      <td>- the message has expired</td>
+    </tr>
+    <tr>
+      <td>request</td>
+      <td>- a request must be returned with a reply</td>
+    </tr>
+    <tr>
+      <td>|&nbsp;request-whenever</td>
+      <td>- a "standing request" where many</td>
+    </tr>
+  </tbody>
+</table>
+<h3>Example:</h3>
+<pre>:performative request<br></pre>
+<hr>
+<a name="act">
+<h2>Act field</h2>
+</a>
+<blockquote><em>required<br>
+Type: token (see below)</em>
+</blockquote>
+The pysical act which is the "topic" of this message.
+The acts form a type tree shown below.  For an updated and complete list, refer to <strong>dataFiles/actions.ont.lisp</strong> in the CASA files.
+<table>
+  <tbody>
+    <tr>
+      <td>get</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;get-info</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getYellowPages</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;search</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getAgents</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getCDs</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getDataCD</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getHistoryCD</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getCDMembers</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;getNewMember</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>destroy</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;deleteDataCD</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;deleteHistoryCD</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;unregister</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;unregisterYellowPages</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;unadvertise</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;unregisterAgent</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;withDrawCD</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>create</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;saveInfo</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;regsiterYellowPages</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;advertise</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;registerAgent</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;register.instance</td>
+      <td>- </td>
+    </tr>
+    <tr>
+      <td>|&nbsp;|&nbsp;joinCD</td>
+      <td>- </td>
+    </tr>
+  </tbody>
+</table>
+<h3>Example:</h3>
+<pre>:act joinCD<br></pre>
+<hr>
+<a name="sender">
+<h2>Sender field</h2>
+</a>
+<blockquote><em>required<br>
+Type: <a href="URLs.html">URL</a></em>
+</blockquote>
+Specifies the immediate sender of the message. For an outgoing message,
+the
+sender is always the fully resolved <a href="URLs.html">URL</a> of the
+sending agent.
+<h3>Example:</h3>
+<pre>:sender casa://kremer@192.168.1.42:2000/casa/Agent/Agent3#lac=8700<br></pre>
+<hr>
+<a name="receiver">
+<h2>Receiver field</h2>
+</a>
+<blockquote><em>required<br>
+Type: <span style="color: rgb(102, 51, 102);">{</span> <a
+ href="URLs.html">URL</a> <span style="color: rgb(102, 51, 102);">}+</span></em>
+</blockquote>
+Specifies the immediate receiver of the message. For an incoming
+message,
+the <span style="color: rgb(51, 102, 102);">first or only <a
+ href="URLs.html">URL</a> in</span> reciever should always be the fully
+resolved <a href="URLs.html">URL</a>
+of the recieving
+agent.&nbsp; <span style="color: rgb(102, 51, 102);">If more than one
+URL is
+present, it specifies a path through which the message is to be
+sent.&nbsp;
+For example, the message may be sent to a particular agent through a
+LAC (which is handling tunneling through a firewall), then through a CD
+to the agent.<br>
+<br>
+Reciever fields are interpreted the the following manor:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(102, 51, 102);">If there <span
+ style="color: rgb(51, 102, 102);">are several</span> URLs
+in the receiver field, strip the first one (the URL of <span
+ style="font-style: italic;">this</span> agent) off and forward the
+message to the next URL in the list.</span></li>
+  <li><span style="color: rgb(102, 51, 102);">If there is only one URL
+in reciever:</span></li>
+  <ul>
+    <li><span style="color: rgb(102, 51, 102);">If there is a <span
+ style="font-style: italic;">to</span> field, and it's different from
+the URL of <span style="font-style: italic;">this</span> agent, then
+forward the message to the URL in the <span style="font-style: italic;">to</span>
+field.</span></li>
+    <li><span style="color: rgb(102, 51, 102);">If there is no <span
+ style="font-style: italic;">to</span> field, or the <span
+ style="font-style: italic;">to</span> field contains the URL of <span
+ style="font-style: italic;">this</span> agent, then the message is
+intended for <span style="font-style: italic;">this</span> agent, so
+process it normally.</span></li>
+  </ul>
+</ul>
+<h3>Example:</h3>
+<pre>:receiver casa://192.168.1.42:9000 casa://kremer@192.168.1.42:7602/casa/TransientAgent/agent7601-temp#lac=9000#indirect=true<br></pre>
+<hr>
+<a name="to">
+<h2>To field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: <a href="URLs.html">URL</a></em>
+</blockquote>
+<p>Specifies the ultimate destination of the message. An agent
+recieving a message
+with a to field that is not not a reference to itself is normally
+expected to
+forward the message to the agent specified in the two field. Some
+agents
+may modify this behaviour, however. For example, security agents may
+block
+a message from being forwarded, or mediateor agents may route a message
+to
+a different agent perhaps to balance the load on service agents.</p>
+<p>If the to field is empty or missing, the message shall normally be
+interpreted as being identical to the <a href="#receiver">receiver</a>
+field. However, agents may
+modify this behaviour. For example, a Cooperation Domain may forward a
+message
+with a blank or missing to field to each of it's members.</p>
+<h3>Example:</h3>
+<pre>:to casa://kremer@192.168.1.42:7602/casa/TransientAgent/agent7601-temp#lac=9000<br></pre>
+<hr>
+<a name="reply-with">
+<h2>Reply-with field</h2>
+</a>
+<blockquote><em>required if |</em>performative<em>| &lt;: </em>request<em><br>
+Type: string</em>
+</blockquote>
+Used as a unique marker to match the reply against a request. An agent
+sending
+out a reply shall generate a unique string in this field, any agents
+replying
+to the request must exactly copy the reply-with field in the request to
+the
+in-reply-to field of the the reply. In this way, the requesting agent
+can
+match up any replies recieved with the originating request. This
+protocol
+allows agents to easily carry on simultanious conversations with any
+number
+of different agents, or even concurrent, independent conversation with
+the
+same agent.
+<h3>Example:</h3>
+<pre>:reply-with kremer@192.168.1.42:7601/casa/Agent/agent7601--1<br></pre>
+<hr>
+<a name="in-reply-to">
+<h2>In-reply-to field</h2>
+</a>
+<blockquote><em>required if |<em>performative</em>| &lt;: <em>reply</em><br>
+Type: string</em>
+</blockquote>
+Used as a unique marker to match the reply against a request. An agent
+sending
+out a reply shall generate a unique string in this field, any agents
+replying
+to the request must exactly copy the reply-with field in the request to
+the
+in-reply-to field of the the reply. In this way, the requesting agent
+can
+match up any replies recieved with the originating request. This
+protocol
+allows agents to easily carry on simultanious conversations with any
+number
+of different agents, or even concurrent, independent conversation with
+the
+same agent.
+<h3>Example:</h3>
+<pre>:in-reply-to kremer@192.168.1.42:7601/casa/Agent/agent7601--1<br></pre>
+<hr>
+<a name="content">
+<h2>Content field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: </em>any<em></em>
+</blockquote>
+The content field can be any information at all. An agent uses the
+information
+given in the <a href="#language">language</a> and <a href="#ontology">ontology</a>
+fields (as well as the <a href="#language-version">language-version</a>
+and
+<a href="#ontology-version">ontology-version</a> fields) to interpret
+the content field.
+<h3>Example:</h3>
+The following example shows a request message sent by an agent to a LAC
+to
+resolve (get the agents port number based on it's unresolved <a
+ href="URLs.html%3EURL%3C/a%3E%29%20the%20%3Ca%20href=" urls.html="">URL</a>of
+a
+third agent. Note that the <a href="#language">language</a> field
+(casa.<a href="URLs.html">URLdescriptor</a>) describes the
+language in which the content field is written, which is merely an
+unreolved
+<a href="URLs.html">URL</a>.
+<pre>( :request<br>  :act resolve-url<br>  :sender casa://kremer@192.168.1.42:7602/casa/TransientAgent/agent7601-temp<br>  :receiver casa://kremer@192.168.1.42:8700#lac=8700<br>  <b>:content casa://kremer@192.168.1.42/casa/Agent/agent7600#lac=8700</b>
+  :language casa.<a
+ href="URLs.html">URLdescriptor</a>
+  :language-version 1.0
+  :reply-with casa://kremer@192.168.1.42:7601/casa/Agent/agent7601--1
+)
+</pre>
+<hr>
+<a name="language">
+<h2>Language field</h2>
+</a>
+<blockquote><em>required if <em>content</em> is not empty</em>
+</blockquote>
+Specifies the language in which the <em><a href="#content">content</a></em>
+is written.
+<h3>Example:</h3>
+<pre>( :request<br>  :act resolve-url<br>  :sender casa://kremer@192.168.1.42:7602/casa/TransientAgent/agent7601-temp<br>  :receiver casa://kremer@192.168.1.42:8700#lac=8700<br>  :content casa://kremer@192.168.1.42/casa/Agent/agent7600#lac=8700<br>  <b>:language casa.<a
+ href="URLs.html">URLdescriptor</a></b>
+  :language-version 1.0
+  :reply-with casa://kremer@192.168.1.42:7601/casa/Agent/agent7601--1
+)
+</pre>
+<hr>
+<a name="language-version">
+<h2>Language-version field</h2>
+</a>
+<blockquote><em>required if <em>languate</em> is not empty<br>
+  <em>digit</em>+{.{<em>digit</em>}+}*</em>
+</blockquote>
+Specifies he version of the <a href="#language">language</a> in which
+the <em><a href="#content">content</a></em> is written.
+<h3>Example:</h3>
+<pre>:language-version 1.0<br></pre>
+<hr>
+<a name="ontology">
+<h2>Ontology field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+Specifies the ontology in which the <em><a href="#content">content</a></em>
+is written.
+<h3>Example:</h3>
+<pre>:ontology manufactoring4<br></pre>
+<hr>
+<a name="ontology-version">
+<h2>Ontology-version field</h2>
+</a>
+<blockquote><em>required if <em>ontology</em> is not empty<br>
+  <em>digit</em>+{.{<em>digit</em>}+}*</em>
+</blockquote>
+Specifies the version of the <a href="#ontology">ontology</a> in which
+the <em><a href="#content">content</a></em> is written.
+<h3>Example:</h3>
+<pre>:ontology-version 1.6.24<br></pre>
+<hr>
+<a name="reply-by" id="reply-by">
+<h2>Reply-by field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: long</em>
+</blockquote>
+Specifies the absolute time when this message expires. Given in
+milliseconds
+since midnight Dec. 31, 1970, GMT. Agents sending a request message
+with a timeout
+normally will ignore replies recieved after the timeout deadline has
+expired.
+Agents receiving request messages with a timeout should normally
+endeavor to
+fulfill the request before the timeout deadline. Normally, such a
+receiving
+agent can ignore the request if it fails to reply before the timeout
+expires,
+although if the agent <em>knows</em> it can't fulfill the request
+before the
+timeout expires it might be <em>polite</em> to send an error reply
+before
+the timeout expires.
+<h3>Example:</h3>
+<pre>:timeout 1056804965073<br></pre>
+<hr>
+<a name="protocol" id="replyby2">
+<h2>Protocol field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: string - protocol name</em> </blockquote>
+The protocol parameter defines the interaction protocol in which the ACL message is generated. This parameter is optional; however, developers are advised that employing ACL without the framework of an interaction protocol (and thus directly using the ACL semantics to control the agent’s generation and interpretation of ACL messages) is an extremely ambitious undertaking.<br>
+<br>
+Any ACL message that contains a non-null value for the protocol parameter is considered to belong to a conversation and it is required to respect the following rules:<br>
+<ul>
+  <li>
+    the initiator of the protocol must assign a non-null value to the conversation-id parameter,<br>
+  </li>
+  <li>
+    all responses to the message, within the scope of the same interaction protocol, should contain the same value for the conversation-id parameter, and,<br>
+  </li>
+  <li>
+    the timeout value in the reply-by parameter must denote the latest time by which the sending agent would like to have received the next message in the protocol flow (not be confused with the latest time by which the interaction protocol should terminate). </li>
+</ul>
+<h3>Example:</h3>
+<pre>:protocol request<br>
+</pre>
+<hr>
+<a name="conversation-id" id="replyby3">
+<h2>Conversation-id field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: string</em> </blockquote>
+An agent may tag ACL messages with a conversation identifier to manage its communication strategies and activities. Typically this will allow an agent to identify individual conversations with multiple agents. It will also allow agents to reason across historical records of conversations.<br>
+<br>
+It is required the usage of globally unique values for the conversation-id parameter in order to allow the participants to distinguish between several concurrent conversations. A simple mechanism to ensure uniqueness is the concatenation of the globally unique identifier of the sender agent to an identifier (for example, a progressive number) that is unique within the scope of the sender agent itself
+<h3>Example:</h3>
+<pre>:conversation-id casa://kremer@10.0.1.6:8700/casa/CooperationDomain/coolness?lac=9000--22<br>
+</pre>
+<hr>
+<a name="priority">
+<h2>Priority field</h2>
+</a>
+<blockquote><em>optional<br>
+Type:int</em></blockquote>
+Partially dictates the order in which messages are handled.&nbsp; All
+numerically high
+priority messages are placed ahead of lower priority messages in an
+agent's incomming message queue.&nbsp; Default priority is 0.&nbsp; The
+range is -32768 to 34787.&nbsp; Agents may or may not pay attention to
+priority (the default agent does) and agents may change the priority or
+message (for example, they may raise the priority of messages as they
+"age").<br>
+<h3>Example:</h3>
+<pre>:priority -5<br></pre>
+<hr>
+<a name="agent">
+<h2>Agent field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The initiator of the act.
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="patient">
+<h2>Patient field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity undergoing the effect of the act.
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="theme">
+<h2>Theme field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity taht is moved by the act of whlse location is described
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="experiencer">
+<h2>Experiencer field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity that is aware of the act or state (but is not in control of
+the action or state).
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="beneficiary">
+<h2>Beneficiary field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity for whose benefit the action was performed.
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="instrument">
+<h2>Instrument field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The means by which the act is performed.
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="location">
+<h2>Location field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The place in which something is situated or takes place.
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="goal">
+<h2>Goal field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity to which something moves (literally or metaphorically).
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="source">
+<h2>Source field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+The entity from which something moves (literally or metaphorically).
+This is a <em>thematic role</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="tense">
+<h2>Tense field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: {past|[present|future}</em>
+The tense of the act.
+This is a <em>semantic qualifier</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+</blockquote>
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="aspect">
+<h2>Aspect field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: {perfect|imperfect|progressive}</em>
+</blockquote>
+The aspect (or relative time or interval) of the act.
+This is a <em>semantic qualifier</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="reference-time">
+<h2>Reference-time field</h2>
+</a>
+<blockquote><em>optional<br>
+Type: long</em>
+</blockquote>
+The point in time that the <em>tense</em> and <em>aspect</em> relate
+to. Given
+in absolute time in milliseconds since midnight Dec. 31, 1970, GMT.
+This is a <em>semantic qualifier</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<a name="reference-event">
+<h2>Reference-event field</h2>
+</a>
+<blockquote><em>optional</em>
+</blockquote>
+An event that the <em>tense</em> and <em>aspect</em> relate to.
+This is a <em>semantic qualifier</em> (<a href="#Saeed1997">Saeed 1997</a>).
+It
+can be used to supplement a message with additional semantic
+information.
+<h3>Example:</h3>
+<pre></pre>
+<hr>
+<hr><a name="references">
+<h1>References</h1>
+</a>
+<p><a name="Saeed1997">Saeed, John I. (1997). Semantics. Blackwell
+Publishers Ltd., Oxford, UK.
+ISBN 0-631-20035.
+</a></p>
+</body>
+</html>

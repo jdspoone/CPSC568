@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Modelistic Software Ltd. (http://www.modelistic.com) -->
+<jme>
+	<diagram scope="socialcommitments.elementSet.scope.casa.socialcommitments" style="standardStyles.diagramStyle.shortSignatures" version="1.3.1">
+		<class yLocation="3885" xLocation="4546" project="v017" className="casa.socialcommitments.MHSCPolicy"/>
+		<class yLocation="2200" xLocation="5396" project="v017" className="casa.socialcommitments.PrioritySocialCommitmentComparator"/>
+		<class yLocation="4204" xLocation="5009" project="v017" className="casa.socialcommitments.MHPolicy_Ack"/>
+		<class yLocation="2953" xLocation="3376" project="v017" className="casa.socialcommitments.SCMonitor"/>
+		<class yLocation="3084" xLocation="5396" project="v017" className="casa.socialcommitments.MHADeleteSC"/>
+		<class yLocation="2038" xLocation="4491" project="v017" className="casa.socialcommitments.SocialCommitmentFilter"/>
+		<class yLocation="2303" xLocation="4886" project="v017" className="casa.socialcommitments.MHPolicy_Inform"/>
+		<class yLocation="3004" xLocation="5829" project="v017" className="casa.socialcommitments.MHPolicy_Agree"/>
+		<class yLocation="1688" xLocation="4399" project="v017" className="casa.socialcommitments.MHPolicy_ProposeDischarge"/>
+		<class yLocation="2711" xLocation="5015" project="v017" className="casa.socialcommitments.OldSocialCommitmentFilter"/>
+		<class yLocation="2915" xLocation="4293" project="v017" className="casa.socialcommitments.SCObservable"/>
+		<class yLocation="2783" xLocation="4642" project="v017" className="casa.socialcommitments.MessageAction"/>
+		<class yLocation="2516" xLocation="4137" project="v017" className="casa.socialcommitments.SCDependant"/>
+		<class yLocation="3940" xLocation="5008" project="v017" className="casa.socialcommitments.MHPolicy_Confirm"/>
+		<class yLocation="3294" xLocation="2834" project="v017" className="casa.socialcommitments.SocialCommitmentPolicy"/>
+		<class yLocation="3106" xLocation="4644" project="v017" className="casa.socialcommitments.Action"/>
+		<class yLocation="3581" xLocation="4638" project="v017" className="casa.socialcommitments.MHACallback"/>
+		<class yLocation="2896" xLocation="6242" project="v017" className="casa.socialcommitments.SerialNumberSocialCommitmentComparator"/>
+		<class yLocation="3527" xLocation="5141" project="v017" className="casa.socialcommitments.MHPolicy_Request"/>
+		<class yLocation="3293" xLocation="3266" project="v017" className="casa.socialcommitments.SocialCommitmentEngine"/>
+		<class yLocation="2652" xLocation="3701" project="v017" className="casa.socialcommitments.SocialCommitment"/>
+		<class yLocation="3656" xLocation="4902" project="v017" className="casa.socialcommitments.MHPCallback"/>
+		<class yLocation="4434" xLocation="4399" project="v017" className="casa.socialcommitments.ApplyToSCs"/>
+		<class yLocation="2019" xLocation="4918" project="v017" className="casa.socialcommitments.SocialCommitmentComparator"/>
+		<class yLocation="3295" xLocation="4097" project="v017" className="casa.socialcommitments.SocialCommitmentStore"/>
+		<class yLocation="4833" xLocation="4257" project="v017" className="casa.socialcommitments.ConcreteMessageProcessor"/>
+		<class yLocation="2761" xLocation="5463" project="v017" className="casa.socialcommitments.MHPolicyObject"/>
+		<class yLocation="3437" xLocation="5450" project="v017" className="casa.socialcommitments.MHPolicy_AbstractRemoveReply"/>
+		<class yLocation="4191" xLocation="3612" project="v017" className="casa.socialcommitments.MHConcretePolicyFactory"/>
+		<class yLocation="2538" xLocation="4484" project="v017" className="casa.socialcommitments.SCObserverInterface"/>
+		<class yLocation="2348" xLocation="3674" project="v017" className="casa.socialcommitments.RequestRequiresReplyPolicy"/>
+		<class yLocation="3349" xLocation="4975" project="v017" className="casa.socialcommitments.MHPolicy_AbstractConsiderer"/>
+		<class yLocation="2446" xLocation="5300" project="v017" className="casa.socialcommitments.MHSCPolicyContainer"/>
+		<class yLocation="4040" xLocation="4086" project="v017" className="casa.socialcommitments.SocialCommitmentObserver"/>
+		<class yLocation="4468" xLocation="4734" project="v017" className="casa.socialcommitments.MHAObject"/>
+		<class yLocation="4170" xLocation="4643" project="v017" className="casa.socialcommitments.MHPolicy_Reply"/>
+		<class yLocation="3702" xLocation="5386" project="v017" className="casa.socialcommitments.MHPolicy_ReplyProposeDischarge"/>
+	</diagram>
+	<jme>
+		<elementSet childrenOred="false" typeFilter="false" id="scope.casa.socialcommitments">
+			<types exclude="false" packagePattern="casa.socialcommitments"/>
+		</elementSet>
+	</jme>
+</jme>

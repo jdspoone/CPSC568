@@ -1,0 +1,142 @@
+=================================================================== Parser testing
+((iota ?x (p ?x)))
+
+((iota ?x (p ?x)))
+----------------------------------------------------------------------------------
+((= (iota ?x (p ?x)) a))
+
+((= (iota ?x (p ?x)) a))
+----------------------------------------------------------------------------------
+((iota ?x (q ?x ?y)))
+
+((iota ?x (q ?x ?y)))
+----------------------------------------------------------------------------------
+((= (iota ?x (q ?x ?y)) 1))
+
+((= (iota ?x (q ?x ?y)) 1))
+----------------------------------------------------------------------------------
+((iota ?y (q ?x ?y)))
+
+((iota ?y (q ?x ?y)))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name A) (inform-ref :sender (agent-identifier :name A) :receiver (set (agent-identifier :name B1)) :content "((iota ?y (q ?x ?y)))" :language fipa-sl :in-reply-to query3)))
+
+((action (agent-identifier :name A) (inform-ref :sender (agent-identifier :name A) :receiver (set (agent-identifier :name B1)) :content "((iota ?y (q ?x ?y)))" :language fipa-sl :in-reply-to query3)))
+----------------------------------------------------------------------------------
+((implies (and (= Stephen (any ?x (fipa-member ?x))) (= Farooq (any ?x (fipa-member ?x)))) (= Stephen Farooq)))
+
+((implies (and (= Stephen (any ?x (fipa-member ?x))) (= Farooq (any ?x (fipa-member ?x)))) (= Stephen Farooq)))
+----------------------------------------------------------------------------------
+((any (sequence ?x ?y) (q ?x ?y)))
+
+((any (sequence ?x ?y) (q ?x ?y)))
+----------------------------------------------------------------------------------
+((= (any (sequence ?x ?y) (q ?x ?y)) (sequence 1 a)))
+
+((= (any (sequence ?x ?y) (q ?x ?y)) (sequence 1 a)))
+----------------------------------------------------------------------------------
+((any ?x (r ?x)))
+
+((any ?x (r ?x)))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name A) (inform-ref :sender (agent-identifier :name A) :receiver (set (agent-identifier :name B1)) :content "((any ?x (r ?x)))" :language fipa-sl :in-reply-to query2)) (unknown-predicate r))
+
+((action (agent-identifier :name A) (inform-ref :sender (agent-identifier :name A) :receiver (set (agent-identifier :name B1)) :content "((any ?x (r ?x)))" :language fipa-sl :in-reply-to query2)) (unknown-predicate r))
+----------------------------------------------------------------------------------
+((all (sequence ?x ?y) (q ?x ?y)))
+
+((all (sequence ?x ?y) (q ?x ?y)))
+----------------------------------------------------------------------------------
+((= (all (sequence ?x ?y) (q ?x ?y)) (set (sequence 1 a) (sequence 1 c))))
+
+((= (all (sequence ?x ?y) (q ?x ?y)) (set (sequence 1 a) (sequence 1 c))))
+----------------------------------------------------------------------------------
+((all ?x (q ?x c)))
+
+((all ?x (q ?x c)))
+----------------------------------------------------------------------------------
+((= (all ?x (q ?x c)) (set)))
+
+((= (all ?x (q ?x c)) (set)))
+----------------------------------------------------------------------------------
+((iota x (result (action j act) x)))
+
+((iota x (result (action j act) x)))
+----------------------------------------------------------------------------------
+((forall ?x1 (forall ?x2 (exists ?y1 (exists ?y2 (Phi ?x1 ?x2 ?y1 ?y2))))))
+
+((forall ?x1 (forall ?x2 (exists ?y1 (exists ?y2 (Phi ?x1 ?x2 ?y1 ?y2))))))
+----------------------------------------------------------------------------------
+((forall ?x1 (or (B k (p ?x1)) (B j (q ?x1)))))
+
+((forall ?x1 (or (B k (p ?x1)) (B j (q ?x1)))))
+----------------------------------------------------------------------------------
+(active)
+
+(active)
+----------------------------------------------------------------------------------
+((action (agent-identifier :name ams@%AP%) (deregister	(ams-agent-description :name (agent-identifier :name iotestagent@%AP%) :state active))))
+
+((action (agent-identifier :name ams@%AP%) (deregister (ams-agent-description :name (agent-identifier :name iotestagent@%AP%) :state active))))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name ams@%AP%)(modify (ams-agent-description :name (agent-identifier :name iotestagent@%AP%) :state suspended ))))
+
+((action (agent-identifier :name ams@%AP%) (modify (ams-agent-description :name (agent-identifier :name iotestagent@%AP%) :state suspended))))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name ams@%AP%   )(register (ams-agent-description :name (agent-identifier :name iotestagent@%AP% ) :state active ))))
+
+((action (agent-identifier :name ams@%AP%) (register (ams-agent-description :name (agent-identifier :name iotestagent@%AP%) :state active))))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name ams@%AP% ) (search (ams-agent-description :state active ))))			
+
+((action (agent-identifier :name ams@%AP%) (search (ams-agent-description :state active))))
+----------------------------------------------------------------------------------
+((test (+ 12 32)))
+
+((test (+ 12 32)))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name df@%AP% ) (modify (df-agent-description :name (agent-identifier :name iotestagent@%AP% )))))
+
+((action (agent-identifier :name df@%AP%) (modify (df-agent-description :name (agent-identifier :name iotestagent@%AP%)))))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name df@%AP% ) (register (df-agent-description :name (agent-identifier :name iotestagent@%AP% )))))
+
+((action (agent-identifier :name df@%AP%) (register (df-agent-description :name (agent-identifier :name iotestagent@%AP%)))))
+----------------------------------------------------------------------------------
+((action (agent-identifier :name df@%AP% ) (search (df-agent-description ) (search-constraints :max-depth 1 ) ) ) )
+
+((action (agent-identifier :name df@%AP%) (search (df-agent-description) (search-constraints :max-depth 1))))
+----------------------------------------------------------------------------------
+((; (action (agent-identifier :name df@%AP% ) (search (df-agent-description ) (search-constraints :max-depth 1))) (action (agent-identifier :name df@%AP% ) (deregister (df-agent-description ) (search-constraints :max-depth 1)))))
+
+((; (action (agent-identifier :name df@%AP%) (search (df-agent-description) (search-constraints :max-depth 1))) (action (agent-identifier :name df@%AP%) (deregister (df-agent-description) (search-constraints :max-depth 1)))))
+----------------------------------------------------------------------------------
+((not ??PHI))
+
+((not ??PHI))
+----------------------------------------------------------------------------------
+((B ??ja (done(action ??sender (??performative :sender ??sender :receiver ??receiver :content ??content)) true)))
+
+((B ??ja (done (action ??sender (??performative :sender ??sender :receiver ??receiver :content ??content)) true)))
+----------------------------------------------------------------------------------
+((done (action ??AG ??AC) ??PHI))
+
+((done (action ??AG ??AC) ??PHI))
+----------------------------------------------------------------------------------
+((done ??AE ??PHI))
+
+((done ??AE ??PHI))
+----------------------------------------------------------------------------------
+nested = 	((test (f :a "((p))")))
+nested = 	((test (f :a "((p))")))
+nested = 	((test (f :a "((p))")))
+
+content = 	((toto (titi "((test (f :a \"((p))\")))")))
+content = 	((toto (titi "((test (f :a \"((p))\")))")))
+content = 	((toto (titi "((test (f :a \"((p))\")))")))
+
+content = 	((toto (titi "((toto (titi \"((test (f :a \\\"((p))\\\")))\")))")))
+content = 	((toto (titi "((toto (titi \"((test (f :a \\\"((p))\\\")))\")))")))
+content = 	((toto (titi "((toto (titi \"((test (f :a \\\"((p))\\\")))\")))")))
+=================================================================== Test ended
+Ellapse time to perform parsing/unparsing operations : 57

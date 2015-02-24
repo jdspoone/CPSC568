@@ -1,0 +1,24 @@
+[PropertyInfo]
+agentRunningObject,URLDescriptor,false,false, , ,false,<default>
+casaFile,CASAFile,false,false, , ,false,<default>
+CASAFilename,String,false,false, , ,true,<default>
+cdIndex,int,false,false, , ,false,<default>
+knownUserMap,CASAFileLACKnownUsersMap,false,false, , ,false,<default>
+otherIndex,int,false,false, , ,false,<default>
+properties,CASAFilePropertiesMap,false,false, , ,false,<default>
+registeredAgents,Hashtable,false,false, , ,false,<default>
+registeredAgentsVector,Vector,false,false, , ,true,<default>
+removedVector,Vector,false,false, , ,false,<default>
+root,String,false,false, , ,true,<default>
+rootDirectory,String,false,false, , ,false,<default>
+runningAgentDescriptors,Vector,false,false, , ,true,<default>
+runningAgents,Hashtable,false,false, , ,false,<default>
+runningAgentsVector,Vector,false,false, , ,true,<default>
+tempUserTable,Hashtable,false,false, , ,false,<default>
+userCounter,int,false,false, , ,false,<default>
+validUsers,Hashtable,false,false, , ,false,<default>
+[IconNames]
+
+
+
+
