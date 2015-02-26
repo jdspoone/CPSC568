@@ -1,0 +1,16 @@
+
+*.log
+
+.metadata/*
+
+*.in
+
+*.out
+
+iRobotCreate/.project
+
+iRobotCreate/.classpath
+
+iRobotCreate/bin/*
+
+iRobotCreate/lib/*
