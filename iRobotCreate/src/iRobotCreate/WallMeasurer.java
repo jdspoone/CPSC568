@@ -1,3 +1,5 @@
+package iRobotCreate;
+
 import java.util.Observable;
 
 import jade.semantics.lang.sl.grammar.Term;
@@ -11,8 +13,10 @@ import casa.event.TimeEvent;
 import casa.exceptions.IllegalOperationException;
 import casa.jade.BeliefObserver;
 import casa.ui.AgentUI;
+import casa.ui.AbstractInternalFrame;
 import casa.util.CASAUtil;
 import casa.util.Trace;
+import casa.Status;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.Environment;
 import iRobotCreate.*;
@@ -166,6 +170,7 @@ public class WallMeasurer extends StateBasedController {
 		// Register all valid states for a WallMeasurer agent
 		registerState( startState );
 		registerState( waitingState );
+		registerState( traversalState );
 		registerState( victoryState );
 	}
 	
@@ -308,6 +313,44 @@ public class WallMeasurer extends StateBasedController {
 		}
 	};
 
+	
+	/**
+	 * First traversal state
+	 */
+	IRobotState traversalState = new IRobotState("traversalState") {
+		
+		public void enterState() {
+			// We're not concerned with measuring the wall we are traversing, begin moving forward.
+			tellRobot( "(irobot.drive 30)" );
+		}
+		
+		public void handleEvent(Sensor sensor, short reading) {
+			
+			switch (sensor) {
+			
+				case Overcurrents:
+					// Fall through, at the moment lets treat overcurrent and bumps/wheeldrops the same way
+				case BumpsAndWheelDrops:
+					
+					// Stop the robot
+					tellRobot( "(irobot.drive 0)" );
+					
+					// Back up a little bit
+					tellRobot( "(irobot.moveby -20)" );
+					
+					// Transition to align2
+//					setState(alignmentState;
+					
+					break;
+										
+				default:
+					break;
+			}
+			
+		}
+	};
+
+	
 	/**
 	 * Victory state entered once the virtual wall has been fully measured.
 	 * The controller's command panel is updated with the results of the measurement;
