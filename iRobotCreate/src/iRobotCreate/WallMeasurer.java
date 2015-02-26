@@ -179,6 +179,26 @@ public class WallMeasurer extends StateBasedController {
 		super.initializeAfterRegistered( registered );
 		
 		setState( startState );
+		try {
+			@SuppressWarnings("unused")
+			SubscribeClientConversation convWall = new SubscribeClientConversation(
+					"--subscription-request", 
+					this, server, 
+					"(all ?x (Wall ?x))", null)
+							{
+								@Override
+								protected void update(URLDescriptor agentB, Term exp) {
+									if (exp==null)
+										return;
+									String intString = exp.toString();
+									int val = Integer.parseInt(intString);
+									onWall(val);
+								}
+							};
+		} catch (IllegalOperationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -407,5 +427,15 @@ public class WallMeasurer extends StateBasedController {
 			// Not needed
 		}
 	};
+	
+	@Override
+	protected void onBumpsAndWheelDrops(int val) {
+		getCurrentState().handleEvent(Sensor.BumpsAndWheelDrops, (short)val);
+	}
+	
+	protected void onWall(int val) {
+		getCurrentState().handleEvent(Sensor.Wall, (short)val);
+		
+	}
 
 }
