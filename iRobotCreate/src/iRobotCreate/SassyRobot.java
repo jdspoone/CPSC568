@@ -46,11 +46,40 @@ public class SassyRobot extends StateBasedController { //extending StateBased Co
 			//memorize this form because you can be darned sure we're going to be using this a lot.
 			sendMessage(ML.REQUEST, ML.EXECUTE, server, ML.LANGUAGE, "lisp", ML.CONTENT, "(progn () (irobot.mode 2) (irobot.drive 30 -1))");
 		}
+	
 		public void handleEvent(Sensor sensor, short shortness) {
-			//Here's where we tell specifically what the agent to do in a given state
-			//when a sensor reading arrives
+			switch (sensor) {
+				case BumpsAndWheelDrops:
+					int deg = 0;
+					switch (shortness & 3) {
+						case 0: //no bumps
+							deg = 0;
+							break;
+						case 1: //right bump
+							deg = 90;
+							break;
+						case 2: //left bump
+							deg = -90;
+							break;
+						case 3: //both bumps
+							deg = 180;
+					}
+					
+					sendMessage(ML.REQUEST, ML.EXECUTE, server 
+							  ,ML.LANGUAGE, "lisp"
+							  ,ML.CONTENT, "(progn () (irobot.drive 0) (irobot.rotate-deg 180) (irobot.drive 100))"
+							  ); 
+					
+					break;
+				}
+			}
+		};
+		
+		@Override
+		protected void onBumpsAndWheelDrops(int val) {
+			getCurrentState().handleEvent(Sensor.BumpsAndWheelDrops, (short)val);
 		}
-	};
+	
 
 	
 	// Skeleton for begin state
