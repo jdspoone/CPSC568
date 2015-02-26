@@ -138,7 +138,7 @@ public class SassyRobot extends StateBasedController { //extending StateBased Co
 	// Then it adjusts back a set angle to hopefully be aligned with the wall.
 	// Unfortunately due to the nature of messages being passed, there's no
 	// guarantee of how long it will take until Mr. Robot actually goes ahead
-	// and stops turning.
+	// and stops turning when the wall sensor reads 0.
 	// Regardless of this, the method is kinda janky and easy to break to begin with.
 	// Hopefully better ideas will hit me. Perhaps using the wall sensor and finding out
 	// the "sweet spot" through trial and error.
@@ -146,7 +146,7 @@ public class SassyRobot extends StateBasedController { //extending StateBased Co
 		
 		boolean wallSeen = false;
 		public void enterState() {
-			sendMessage(ML.REQUEST, ML.EXECUTE, server, ML.LANGUAGE, "lisp", ML.CONTENT, "(progn () (irobot.drive 0 :flush T) (irobot.drive 30 1))");
+			sendMessage(ML.REQUEST, ML.EXECUTE, server, ML.LANGUAGE, "lisp", ML.CONTENT, "(progn () (irobot.drive 0 :flush T) (irobot.drive 15 1))");
 		}
 		
 		public void handleEvent(Sensor sensor, short shortness) {
