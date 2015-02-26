@@ -332,7 +332,7 @@ public class WallMeasurer extends StateBasedController {
 				case Overcurrents:
 					
 					// We want to ignore sensor readings of zero 
-					if ((reading & 3) == 0)
+					if (reading == 0)
 						break;
 					
 				case BumpsAndWheelDrops:
