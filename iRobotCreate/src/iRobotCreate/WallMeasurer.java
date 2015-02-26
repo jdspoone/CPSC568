@@ -328,9 +328,17 @@ public class WallMeasurer extends StateBasedController {
 			
 			switch (sensor) {
 			
+				// At the moment, let's treat overcurrent and bumps/wheeldrops the same way
 				case Overcurrents:
-					// Fall through, at the moment lets treat overcurrent and bumps/wheeldrops the same way
+					
+					// We want to ignore sensor readings of zero 
+					if ((reading & 3) == 0)
+						break;
+					
 				case BumpsAndWheelDrops:
+					
+					if ((reading & 3) == 0)
+						break;					
 					
 					// Stop the robot
 					tellRobot( "(irobot.drive 0)" );
