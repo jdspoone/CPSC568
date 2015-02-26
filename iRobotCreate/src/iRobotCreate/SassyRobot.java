@@ -7,13 +7,9 @@ package iRobotCreate;
 
 import iRobotCreate.iRobotCommands.Sensor;
 import casa.ML;
-import casa.URLDescriptor;
 import casa.abcl.ParamsMap;
-import casa.conversation2.SubscribeClientConversation;
-import casa.exceptions.IllegalOperationException;
 import casa.ui.AgentUI;
 import iRobotCreate.IRobotState;
-import jade.semantics.lang.sl.grammar.Term;
 
 public class SassyRobot extends StateBasedController { //extending StateBased Controller
 													   //is needed for setState and getState
@@ -48,38 +44,61 @@ public class SassyRobot extends StateBasedController { //extending StateBased Co
 		@Override
 		public void enterState() {
 			//memorize this form because you can be darned sure we're going to be using this a lot.
-			sendMessage(ML.REQUEST, ML.EXECUTE, server, ML.LANGUAGE, "lisp", ML.CONTENT, "(progn () (irobot.mode 2) (irobot.drive 70))");
+			sendMessage(ML.REQUEST, ML.EXECUTE, server, ML.LANGUAGE, "lisp", ML.CONTENT, "(progn () (irobot.mode 2) (irobot.drive 30 -1))");
 		}
 		public void handleEvent(Sensor sensor, short shortness) {
-			switch (sensor) {
-			case BumpsAndWheelDrops:
-				int deg = 0;
-				switch (shortness & 3) {
-				case 0: //no bumps
-					deg = 0;
-					break;
-				case 1: //right bump
-					deg = 90;
-					break;
-				case 2: //left bump
-					deg = -90;
-					break;
-				case 3: //both bumps
-					deg = 180;
-				}
-				
-				sendMessage(ML.REQUEST, ML.EXECUTE, server 
-						  ,ML.LANGUAGE, "lisp"
-						  ,ML.CONTENT, "(progn () (irobot.drive 0) (irobot.rotate-deg 180) (irobot.drive 100))"
-						  ); 
-				
-				break;
-			}
+			//Here's where we tell specifically what the agent to do in a given state
+			//when a sensor reading arrives
+		}
+	};
+
+	
+	// Skeleton for begin state
+	IRobotState begin = new IRobotState("begin") {
+		public void handleEvent(Sensor sensor, short shortness) {
 		}
 	};
 	
-	@Override
-	protected void onBumpsAndWheelDrops(int val) {
-		getCurrentState().handleEvent(Sensor.BumpsAndWheelDrops, (short)val);
-	}
+	
+	// Skeleton for findWall state
+	IRobotState find = new IRobotState("find") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for first align state
+	IRobotState align1 = new IRobotState("align1") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for first wall traversal state
+	IRobotState traverse1 = new IRobotState("traverse1") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for second align state
+	IRobotState align2 = new IRobotState("align2") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for second wall traversal state
+	IRobotState traverse2 = new IRobotState("traverse2") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+
+	
+	// Skeleton for end state
+	IRobotState end = new IRobotState("end") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+
 }
