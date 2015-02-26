@@ -51,4 +51,55 @@ public class SassyRobot extends StateBasedController { //extending StateBased Co
 			//when a sensor reading arrives
 		}
 	};
+	
+	
+	// Skeleton for begin state
+	IRobotState begin = new IRobotState("begin") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for findWall state
+	IRobotState find = new IRobotState("find") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for first align state
+	IRobotState align1 = new IRobotState("align1") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for first wall traversal state
+	IRobotState traverse1 = new IRobotState("traverse1") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for second align state
+	IRobotState align2 = new IRobotState("align2") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+	
+	
+	// Skeleton for second wall traversal state
+	IRobotState traverse2 = new IRobotState("traverse2") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+
+	
+	// Skeleton for end state
+	IRobotState end = new IRobotState("end") {
+		public void handleEvent(Sensor sensor, short shortness) {
+		}
+	};
+
+	
 }
