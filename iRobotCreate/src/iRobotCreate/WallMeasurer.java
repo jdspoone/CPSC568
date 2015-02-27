@@ -199,6 +199,22 @@ public class WallMeasurer extends StateBasedController {
 								}
 							};
 							
+			@SuppressWarnings("unused")
+			SubscribeClientConversation convDistance = new SubscribeClientConversation(
+					"--subscription-request", 
+					this, server, 
+					"(all ?x (Distance ?x))", null)
+							{
+								@Override
+								protected void update(URLDescriptor agentB, Term exp) {
+									if (exp==null)
+										return;
+									String intString = exp.toString();
+									int val = Integer.parseInt(intString);
+									onDistance(val);
+								}
+							};
+							
 							
 		} catch (IllegalOperationException e) {
 			// TODO Auto-generated catch block
@@ -418,7 +434,6 @@ public class WallMeasurer extends StateBasedController {
 				default:
 					break;
 				}
-			
 			}
 		};
 			
@@ -435,7 +450,7 @@ public class WallMeasurer extends StateBasedController {
 		public void handleEvent(Sensor sensor, short reading) {
 			
 			switch (sensor) {
-			
+
 				// At the moment, let's treat overcurrent and bumps/wheeldrops the same way
 				case Overcurrents:
 					
@@ -451,15 +466,24 @@ public class WallMeasurer extends StateBasedController {
 					
 					// Stop the robot
 					tellRobot( "(irobot.drive 0)" );
-					
+
 					// Back up a little bit
 					tellRobot( "(irobot.moveby -20)" );
+					
+					// Reset our wallLength
+					wallLength = 0;
 					
 					// Transition to align2
 					setState(align1);
 					
 					break;
-										
+						
+				case Distance:					
+					
+					// Update the length of the wall we're currently measuring
+					wallLength += (int)reading;
+					break;
+					
 				default:
 					break;
 			}
@@ -531,6 +555,11 @@ public class WallMeasurer extends StateBasedController {
 	
 	protected void onWall(int val) {
 		getCurrentState().handleEvent(Sensor.Wall, (short)val);
+	}
+
+
+	protected void onDistance(int val) {
+		getCurrentState().handleEvent(Sensor.Distance, (short)val);
 	}
 
 }
