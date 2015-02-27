@@ -1,15 +1,11 @@
-import java.util.Observable;
-
 import jade.semantics.lang.sl.grammar.Term;
 import casa.LispAccessible;
 import casa.ML;
-import casa.ObserverNotification;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
 import casa.event.TimeEvent;
 import casa.exceptions.IllegalOperationException;
-import casa.jade.BeliefObserver;
 import casa.ui.AgentUI;
 import casa.util.CASAUtil;
 import casa.util.Trace;
@@ -19,8 +15,7 @@ import iRobotCreate.*;
 
 public class WallMeasurer extends StateBasedController {
 	
-	private iRobotCreate robot;
-	
+	// Status variables: length of wall measured (in cm); whether or not virtual wall has been measured; whether or not virtual wall has been detected
 	private long wallMeasurement = 0;
 	public boolean isVictory = false;
 	public boolean foundVirtualWall = false;
@@ -32,6 +27,13 @@ public class WallMeasurer extends StateBasedController {
 		  createCasaLispOperators( WallMeasurer.class );
 	  }
 	
+	/**
+	 * Command line lisp command to begin measurement task.
+	 * On executing this function, the robot enters its "findWall" state, proceeding toward the nearest wall. It will then traverse the walls until it
+	 * detects the virtual wall, and then measures that wall.
+	 * 
+	 * @return Status 0 if successful
+	 */
 	@LispAccessible( name = "measure", help = "Begin measurement task. Robot proceeds toward a wall and traverses all walls until it finds the virtual wall; it then measures this wall." )
 	public Status measure() {
 
@@ -47,6 +49,12 @@ public class WallMeasurer extends StateBasedController {
 		return new Status( 0 );
 	}
 
+	/**
+	 * Command line lisp command to report on the robot's progress.
+	 * Prints current state information ("waiting", "complete", "starting up", "in progress"), current wall measurements, and any errors thus far.
+	 * 
+	 * @return Status 0 if successful
+	 */
 	@LispAccessible( name = "report", help = "Prints state information and robot's current state on the controller's command tab." )
 	public Status report() {
 
@@ -87,7 +95,13 @@ public class WallMeasurer extends StateBasedController {
 		return new Status( 0 );
 	}
 
-	
+	/**
+	 * Command line lisp command to reset the robot's state.
+	 * Puts the robot in "waiting" state and resets all measurement variables.
+	 * To resume, execute (measure).
+	 * 
+	 * @return Status 0 if successful
+	 */
 	@LispAccessible( name = "reset", help = "Reset all measurements. Robot enters waiting state, awaiting command-line instructions." )
 	public Status reset() {
 
@@ -106,8 +120,9 @@ public class WallMeasurer extends StateBasedController {
 	/**
 	   * Start an {@link iRobotCreate} robot at 7778.<br>
 	   * Wait for it to be initialized.<br>
-	   * Start a {@link LineFollower} controller at 7777.<br>
+	   * Start a {@link WallMeasurer} controller at 7777.<br>
 	   * @param args
+	   * @author Rob Kremer
 	   */
 	  public static void main(String[] args) {
 	  	iRobotCreate robot = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "robot", 7778, null
@@ -146,15 +161,13 @@ public class WallMeasurer extends StateBasedController {
 	  		if (controller==null) {
 	  			Trace.log("error", "Cannot create WallMeasurer agent.");
 	  		}
-	  		
-	  		controller.robot = robot;
 	  	}
 	  }
-	  
 	
-	private int wallLength = 0;
 	
 	/**
+	 * Initialize a new WallMeasurer controller. Register all possible states.
+	 * 
 	 * @param params The standard map of parameters to set up the robot.  This is a simple map of (String) keys to values. The
 	 * key "CONTROLS" is required and must specify the URL of an {@link iRobotCreate} agent to control.
 	 * @param ui
@@ -167,13 +180,68 @@ public class WallMeasurer extends StateBasedController {
 		registerState( startState );
 		registerState( waitingState );
 		registerState( victoryState );
+		
+		registerState( align1State );
 	}
 	
+	/**
+	 * Initialize the controller.
+	 * Enter start state.
+	 */
 	@Override
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
 		
+		/*
+		 * Supposedly this is a way to get sensor readings, but I can't seem to get this to work.
+		 */
+		try {
+			
+			@SuppressWarnings("unused")
+			SubscribeClientConversation convWall = new SubscribeClientConversation(
+					"--subscription-request", 
+					this, getServer(), 
+					"(all ?x (WallSignal ?x))", null)
+							{
+								@Override
+								public void update(URLDescriptor agentB, Term term) {
+									if (term==null || demoOn())
+										return;
+									String intString = term.toString();
+									int val = Integer.parseInt(intString);
+									onWallUpdate(val);
+								}
+							};
+							
+			@SuppressWarnings("unused")
+			SubscribeClientConversation convAngle = new SubscribeClientConversation(
+					"--subscription-request", 
+					this, getServer(), 
+					"(all ?x (angleAcc ?x))", null)
+							{
+								@Override
+								public void update(URLDescriptor agentB, Term term) {
+									if (term==null || demoOn())
+										return;
+									String intString = term.toString();
+									int val = Integer.parseInt(intString);
+									onAngleAccUpdate(val);
+								}
+							};
+							
+		} catch (IllegalOperationException e) {
+			e.printStackTrace();
+		}
+		
 		setState( startState );
+	}
+	
+	public void onWallUpdate(int val) {
+		getCurrentState().handleEvent( iRobotCommands.Sensor.WallSignal, (short) val ); 
+	}
+	
+	public void onAngleAccUpdate(int val) {
+		getCurrentState().handleEvent( iRobotCommands.Sensor.Angle, (short) val ); 
 	}
 	
 	/**
@@ -201,7 +269,6 @@ public class WallMeasurer extends StateBasedController {
 	 * Fire a time-out message for after 10 minutes have elapsed.
 	 */
 	IRobotState startState = new IRobotState( "start" ) {
-		private boolean commandSent = false;
 	
 		@Override
 		public void enterState() {
@@ -229,7 +296,7 @@ public class WallMeasurer extends StateBasedController {
 						
 						// Fire time event for 10 minutes in the future
 						try {
-							TimeEvent timeout = new TimeEvent( "TimeEvent", getAgent(), System.currentTimeMillis() + 10 * 60 * 1000 ) {
+							TimeEvent timeout = new TimeEvent( "event", getAgent(), System.currentTimeMillis() + 10 * 60 * 1000 ) {
 							 	@Override
 								public void fireEvent() {
 							 		super.fireEvent();
@@ -288,7 +355,7 @@ public class WallMeasurer extends StateBasedController {
 						System.out.println(getURL().getFile()+" enter state waiting thread started.");
 						
 						// Testing...
-						tellRobot( "(iRobot.drive 10 10)" );
+						tellRobot( "(iRobot.drive 100)" );
 						
 					} catch (Throwable e) {
 						println("error", "WallMeasurer.enterState() [state=waiting]: Unexpected error in state thread", e);
@@ -301,9 +368,14 @@ public class WallMeasurer extends StateBasedController {
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
+			// Testing...
+			// When the robot hits a wall, begin aligning state
 			switch (sensor) {
-			case Overcurrents:
 			case BumpsAndWheelDrops:
+				if (reading!=0) {
+					setState( align1State );
+				}
+				break;
 			}
 		}
 	};
@@ -356,5 +428,84 @@ public class WallMeasurer extends StateBasedController {
 			// Not needed
 		}
 	};
+	
+	/**
+	 * Aligning state entered the first time the robot bumps up against a wall.
+	 * Sara's version - needs testing.
+	 */
+	IRobotState align1State = new IRobotState( "align1" ) {
+		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						System.out.println(getURL().getFile()+" enter state align1 thread started.");
+						
+						// Stop moving forward
+						tellRobot( "(irobot.drive 0 :emergency T)" );
+						
+						// Back up slightly
+						tellRobot( "(iRobot.drive -10)" );
+						CASAUtil.sleepIgnoringInterrupts( 1000, null );
+						tellRobot( "iRobot.drive 0 :emergency T)" );
+						
+						// Rotate full circle, recording WallSignal readings.
+						calibrating = true;
+						tellRobot( "(iRobot.reset-angle-acc)" );
+						maxWallSignal = 0;
+						angleOfMaxWallSignal = 0;
+						System.out.println("Begin calibration...");
+						tellRobot( "(iRobot.rotate-deg 360)" );
+						
+						// Allow time to catch up...
+						CASAUtil.sleepIgnoringInterrupts(10000, null);
+						
+						// Align so strongest WallSignal achieved
+						calibrating = false;
+
+						System.out.println("Done calibration...ideal angle: " + angleOfMaxWallSignal );
+						tellRobot( "(irobot.rotate-deg " + angleOfMaxWallSignal + ")" );
+
+						// Should be currently at max WallSignal
+						angleOfMaxWallSignal = 0;
+						
+						// set state to traverse wall (temp victory)
+						setState( victoryState );
+						
+					} catch (Throwable e) {
+						println("error", "WallMeasurer.enterState() [state=align1]: Unexpected error in state thread", e);
+						errors.add( "WallMeasurer.enterState() [state=align1]: " + e );
+					}
+					System.out.println(getURL().getFile()+" enter state align1 thread ended.");
+				}
+			}).start();
+		}
+		
+		public boolean calibrating = false;
+		public short maxWallSignal = 0;
+		public int angleOfMaxWallSignal = 0;
+		public int currentAngle = 0;
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			switch (sensor) {
+			case WallSignal: // Can't seem to ever trigger this
+				System.out.println("Wall signal received: " + reading);
+				if ( calibrating && reading > maxWallSignal ) {
+					maxWallSignal = reading;
+					angleOfMaxWallSignal = currentAngle + angleOfMaxWallSignal;
+				}
+				break;
+			case Angle: // Or this
+				System.out.println("Angle received: " + reading);
+				if ( calibrating )
+					currentAngle = reading;
+			}
+		}
+	};
+
 
 }
