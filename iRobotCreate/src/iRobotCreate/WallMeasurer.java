@@ -132,9 +132,10 @@ public class WallMeasurer extends StateBasedController {
 	  		if (Environment.exits()) { // we are operating a simulator
 	  			try {
 	  				Environment env = Environment.getInstance();
-	  				env.abclEval("(iRobot-env.new-bounds 4000 4000)", null); 
-	  				env.abclEval("(iRobot-env.new \"line1\" \"Line2D\"  500  500 2000 2000 :paint T :corporeal NIL :color #x8888FF)", null);
-	  				env.abclEval("(iRobot-env.new \"line2\" \"Line2D\" 2000 2000 1000 3000 :paint T :corporeal NIL :color #x8888FF)", null);
+	  				env.abclEval("(iRobot-env.new-bounds 2000 2000)", null); 
+	  				env.abclEval("(iRobot-env.new \"vWall field\"  \"Rectangle2D\"  1000  500 300 1000 :vwall T :corporeal NIL :color #xF4FFF4)", null);
+	  				env.abclEval("(iRobot-env.new \"vWall emitter\"  \"Rectangle2D\"  1000  1050  50 100 :corporeal T :color #xFF00FE)", null);
+	  				env.abclEval("(iRobot-env.new \"p1\"  \"Line2D\"  500  1500 1500  1500 :paint T :corporeal NIL :color #x202020)", null);
 	  			} catch (Exception e) {
 	  				System.out.println(robot.println("error", "Environment failed", e));
 	  			}
