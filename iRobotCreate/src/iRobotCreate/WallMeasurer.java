@@ -49,7 +49,7 @@ public class WallMeasurer extends StateBasedController {
 		foundVirtualWall = false;
 		
 		// Enter first wall-finding state
-		//setState( findWall );
+		setState( wandering );
 		
 		// Success
 		return new Status( 0 );
@@ -618,7 +618,7 @@ public class WallMeasurer extends StateBasedController {
 
 	/**
 	 * Aligning state entered the first time the robot bumps up against a wall.
-	 * Sara's version - needs testing.
+	 * Sara's version - currently dysfunctional. needs fixing and re-testing.
 	 */
 	IRobotState align1State = new IRobotState( "align1" ) {
 		
