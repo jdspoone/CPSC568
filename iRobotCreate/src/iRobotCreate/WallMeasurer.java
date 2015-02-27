@@ -516,6 +516,8 @@ public class WallMeasurer extends StateBasedController {
 	 */
 	IRobotState traversalState = new IRobotState("traversalState") {
 		
+		private int wallLength = 0;
+		
 		public void enterState() {
 			// We're not concerned with measuring the wall we are traversing, begin moving forward.
 			tellRobot( "(irobot.drive 30)" );
