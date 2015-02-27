@@ -456,7 +456,7 @@ public class WallMeasurer extends StateBasedController {
 					tellRobot( "(irobot.moveby -20)" );
 					
 					// Transition to align2
-//					setState(alignmentState;
+					setState(align1);
 					
 					break;
 										
