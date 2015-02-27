@@ -172,6 +172,8 @@ public class WallMeasurer extends StateBasedController {
 		registerState( waitingState );
 		registerState( traversalState );
 		registerState( victoryState );
+		registerState( align1 );
+		registerState( wandering );
 	}
 	
 	@Override
@@ -195,6 +197,8 @@ public class WallMeasurer extends StateBasedController {
 									onWall(val);
 								}
 							};
+							
+							
 		} catch (IllegalOperationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -287,7 +291,7 @@ public class WallMeasurer extends StateBasedController {
 					}
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
-					setState( waitingState );
+					setState( wandering );
 				}
 			}).start();
 		}
@@ -332,8 +336,91 @@ public class WallMeasurer extends StateBasedController {
 			}
 		}
 	};
-
 	
+	/*
+	 * This state is what sends the robot faffing about whatever space it's been put into.
+	 * Left and right bumps by themselves make the robot back up a bit and adjust its angle
+	 * to go elsewhere. Once we arrive at a wall head on enough to activate both the left
+	 * and right bumpers, the robot backs up a bit and goes into the first alignment state.
+	 */
+	
+	IRobotState wandering = new IRobotState("wandering") {
+		@Override
+		public void enterState() {
+			tellRobot("(progn () (irobot.drive 500))");
+		}
+		@Override
+		public void handleEvent(Sensor sensor, short shortness) {
+			switch (sensor) {
+				case BumpsAndWheelDrops:
+					int deg = 0;
+					switch (shortness & 3) {
+						case 0: //no bumps
+							deg = 0;
+							break;
+						case 1: //right bump
+							deg = 30;
+							break;
+						case 2: //left bump
+							deg = -75;
+							break;
+						case 3: //both bumps
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby -20))");
+							setState(align1);
+					}
+					
+					//if we have a degree to adjust by that's greater than 0, let's go ahead
+					//and adjust the robot and keep going. The check is necessary otherwise
+					//this event is going to kick in again once the bump sensor starts reading 0.
+					
+					if (deg != 0) {
+						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50) (irobot.rotate-deg "+deg+") (irobot.drive 500))");
+					}
+					break;
+				default:
+				    break;
+				}
+			}
+		};
+		
+		/* This state aligns the robot to be parallel with the wall (hopefully!) after the robot
+		 * makes contact with the wall relatively head on. The basic concept is that it rotates in place
+		 * until the binary wall sensor switches to 0. After that, it rotates back a set angle
+		 * to align itself.
+		 * 
+		 * The major snag with this method is that due to the queuing delays inherit in passing messages
+		 * between the controller and the robot agent, there's no guarantee of the robot stopping in a 
+		 * consistent position. Having the robot turn as slowly as possible mitigates this somewhat. 
+		 */
+		
+		private final int rotateBack = -27; //degrees to rotate back
+		IRobotState align1 = new IRobotState("align1") {
+			
+			
+			boolean wallSeen = false; // this may not be strictly necessary
+			public void enterState() {
+				tellRobot("(irobot.drive 15 1))"); //let's turn slowly in place
+			}
+			
+			public void handleEvent(Sensor sensor, short shortness) {
+				switch(sensor) {
+				case Wall:
+					switch (shortness) {
+					case 0:
+						if (wallSeen) {
+							tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg "+rotateBack+"))");
+							setState(traversalState);
+						}
+					case 1:
+						wallSeen = true;
+					}
+				default:
+					break;
+				}
+			
+			}
+		};
+			
 	/**
 	 * First traversal state
 	 */
@@ -356,6 +443,7 @@ public class WallMeasurer extends StateBasedController {
 						break;
 					
 				case BumpsAndWheelDrops:
+					
 					
 					if ((reading & 3) == 0)
 						break;					
@@ -428,14 +516,20 @@ public class WallMeasurer extends StateBasedController {
 		}
 	};
 	
+	/* This gets called once the controller is notified of a bump or a wheel drop.
+	   This is an override of a method in the Controller class. */
+	
 	@Override
 	protected void onBumpsAndWheelDrops(int val) {
 		getCurrentState().handleEvent(Sensor.BumpsAndWheelDrops, (short)val);
 	}
 	
+	/* This gets called once the controller receives notification of a change in the
+	 * value of wall sensor.
+	 */
+	
 	protected void onWall(int val) {
 		getCurrentState().handleEvent(Sensor.Wall, (short)val);
-		
 	}
 
 }
