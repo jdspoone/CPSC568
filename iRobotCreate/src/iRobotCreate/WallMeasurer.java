@@ -564,78 +564,89 @@ public class WallMeasurer extends StateBasedController {
 			}
 		};
 			
-	/**
-	 * First traversal state
-	 */
-	
-		/* In this state, the robot goes along the wall.
-		 * If it sees the VirtualWall, it goes into the opposit direction
-		 * and notice he now knows where the virtual wall is.
-		 *  The next time the robot hits a corner it will be at the beginning of the Virtual 
-		 *  Wall it has to measure which is almost a victory. 
-		 *  When the robot hits a second corner it means it has reached the other side of the wall
-		 *  and the measurement is done
-		 *  
-		 *  This still part needs improvement
-		 */
-		IRobotState traversalState = new IRobotState("traversalState") {
+	// First traversal state
+	IRobotState traversal1 = new IRobotState("traversal1") {
 			
-			public void enterState() {
-				// We're not concerned with measuring the wall we are traversing, begin moving forward.
-				tellRobot( "(irobot.drive 30)" );
-			}
+		private final int allowedDeviation = 25;
+		private final int correctionAngle = 3;
 			
-			public void handleEvent(Sensor sensor, short reading) {
+		private int initialWallSignal = 0;
+			
+		public void enterState() {
+			// We're not concerned with measuring the wall we are traversing, begin moving forward.
+			tellRobot( "(irobot.drive 30)" );
+		}
 				
-				switch (sensor) {
+		public void handleEvent(Sensor sensor, short reading) {
+					
+			switch (sensor) {
 
-					// At the moment, let's treat overcurrent and bumps/wheeldrops the same way
-					case Overcurrents:
+				// At the moment, let's treat overcurrent and bumps/wheeldrops the same way
+				case Overcurrents:
+							
+					// We want to ignore sensor readings of zero 
+					if (reading == 0)
+						break;
+							
+				case BumpsAndWheelDrops:
 						
-						// We want to ignore sensor readings of zero 
-						if (reading == 0)
-							break;
-						
-					case BumpsAndWheelDrops:
-						
-						switch (reading & 3) {
+					switch (reading & 3) {
 						case 0:
 							break;
 						case 1:
 						case 2:
+							// This should never happen now...
 							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive 30))" );
 							break;
 						case 3:
+								
 							wallMeasurement = 0 ;
-							//just tell the robot to turn 90 degrees. Align doesn't work well with
-							//the corner turn because it requires being really close to the wall,
-							//which is not guaranteed by the time the robot gets close to the end.
-							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 90) (irobot.drive 30))");
-							
+							tellRobot("(irobot.moveby -20)");
+							setState(align1);
+								
 							break;
 						default:
 							break;
+					}
+							
+				case Distance:					
+							
+					// Update the length of the wall we're currently measuring
+					wallMeasurement += (int)reading;
+					break;
+													
+				case WallSignal:
+												
+					// If we haven't set our initial wall signal
+					int signal = (int)reading;
+					if (initialWallSignal == 0) {
+								
+						// And the current reading is greater than 0
+						if (signal > 0) {
+							System.out.println("Setting inital wall signal to " + (int)reading);
+							initialWallSignal = signal;
 						}
-						
-					case Distance:					
-						
-						// Update the length of the wall we're currently measuring
-						wallMeasurement += (int)reading;
-						break;
-						
-					case Wall:
-						
-						if (reading == 0) {
-							tellRobot( "(irobot.drive 0 :flush T)");
-							setState(align2);
+					}
+							
+					// Otherwise, ensure we are not deviating from that inital wall reading too much
+					else {
+								
+						// If the given reading is outside of the allowed deviation, adjust course
+						if (signal > (initialWallSignal + allowedDeviation) || signal < (initialWallSignal - allowedDeviation)) {
+							int correctionFactor = signal > initialWallSignal ? correctionAngle : -correctionAngle;
+							System.out.println("Adjusting course by " + correctionFactor);
+							tellRobot( "(irobot.rotate-deg " + correctionFactor + ")" );
+							tellRobot( "(irobot.drive 30)" );
 						}
-						
-					default:
-						break;
-				}
-				
+					}
+							
+					break;
+							
+				default:
+					break;
 			}
-};
+		}
+	};
 
 		
 	/* This state is supposed to replace the traversal state.
