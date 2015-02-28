@@ -196,7 +196,7 @@ public class WallMeasurer extends StateBasedController {
 		// Register all valid states for a WallMeasurer agent
 		registerState( startState );
 		registerState( waitingState );
-		registerState( traversalState );
+		registerState( traversal1 );
 		registerState( victoryState );
 		
 		registerState( align1State );
@@ -553,7 +553,7 @@ public class WallMeasurer extends StateBasedController {
 					case 0:
 						if (wallSeen) {
 							tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg "+rotateBack+"))");
-							setState(traversalState);
+							setState(traversal1);
 						}
 					case 1:
 						wallSeen = true;
@@ -769,7 +769,7 @@ public class WallMeasurer extends StateBasedController {
 			case Wall:
 				if (reading == 1) {
 					tellRobot("(irobot.drive 0 :flush T");
-					setState(traversalState);
+					setState(traversal1);
 				}
 			default:
 				break;
