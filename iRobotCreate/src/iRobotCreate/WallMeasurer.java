@@ -1,10 +1,14 @@
 package iRobotCreate;
 
+import java.text.ParseException;
 import java.util.Observable;
 
 import jade.semantics.lang.sl.grammar.Term;
 import casa.LispAccessible;
 import casa.ML;
+import casa.MLMessage;
+import casa.ObserverNotification;
+import casa.PerformDescriptor;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
@@ -202,49 +206,46 @@ public class WallMeasurer extends StateBasedController {
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
 		
+		setState( startState );
+		
 		/*
 		 * Supposedly this is a way to get sensor readings, but I can't seem to get this to work.
+		 * Instead, this controller should observe its incoming messages for inform-ref replies to these subscriptions.
 		 */
+		this.addObserver( this );
 		try {
 			
 			@SuppressWarnings("unused")
-			SubscribeClientConversation convWall = new SubscribeClientConversation(
+			SubscribeClientConversation convWallSignal = new SubscribeClientConversation(
 					"--subscription-request", 
-					this, getServer(), 
+					this, server, 
 					"(all ?x (WallSignal ?x))", null)
 							{
-								@Override
-								public void update(URLDescriptor agentB, Term term) {
-									if (term==null || demoOn())
+				
+								/*@Override
+								protected void update(URLDescriptor agentB, Term term) {
+									if (term==null)
 										return;
 									String intString = term.toString();
 									int val = Integer.parseInt(intString);
-									onWallUpdate(val);
-								}
+								}*/
 							};
 							
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convAngle = new SubscribeClientConversation(
 					"--subscription-request", 
-					this, getServer(), 
-					"(all ?x (angleAcc ?x))", null)
+					this, server, 
+					"(all ?x (Angle ?x))", null)
 							{
-								@Override
-								public void update(URLDescriptor agentB, Term term) {
-									if (term==null || demoOn())
+								/*@Override
+								protected void update(URLDescriptor agentB, Term term) {
+									if (term==null)
 										return;
 									String intString = term.toString();
 									int val = Integer.parseInt(intString);
-									onAngleAccUpdate(val);
-								}
+								}*/
 							};
 							
-		} catch (IllegalOperationException e) {
-			e.printStackTrace();
-		}
-		
-		setState( startState );
-		try {
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convWall = new SubscribeClientConversation(
 					"--subscription-request", 
@@ -284,14 +285,6 @@ public class WallMeasurer extends StateBasedController {
 		}
 	}
 	
-	public void onWallUpdate(int val) {
-		getCurrentState().handleEvent( iRobotCommands.Sensor.WallSignal, (short) val ); 
-	}
-	
-	public void onAngleAccUpdate(int val) {
-		getCurrentState().handleEvent( iRobotCommands.Sensor.Angle, (short) val ); 
-	}
-	
 	/**
 	 * Utility function for sending a command to the robot agent.
 	 * @param command A lisp command, enclosed in a string, to send the robot agent
@@ -307,6 +300,51 @@ public class WallMeasurer extends StateBasedController {
 			errors.add( "WallMeasurer.tellRobot: " + e );
 		}
 	}
+	
+	/**
+	 * Modified update method to check for sensor readings.
+	 * Use this in case other forms of update (ie. SubscriptionClientConversation) are borked.
+	 * The controller examines the content of incoming inform-ref messages, and, upon notification
+	 * from one of the sensors of interest, it will trigger an event handler for that sensor update.
+	 */
+	public void update( Observable o, Object arg ) {
+        // Check that the event arg is a proper notification and not garbage
+        if ( arg instanceof ObserverNotification ) {
+         
+            ObserverNotification aNotification = ( ObserverNotification ) arg;
+             
+            // Check that the notification comes from the observed subject
+            if ( aNotification.getAgent() == this ) {
+             
+                // Check if we were notified of a message being received by the subject
+                if ( aNotification.getType().equals( ML.EVENT_MESSAGE_RECEIVED ) ) {
+                     
+                    MLMessage message = ( MLMessage ) aNotification.getObject();
+                    
+                    try {
+                    	// Only bother with messages that might be sensor updates
+						if ( message.getParameter( ML.PERFORMATIVE ) == ML.INFORM_REF ) {
+							System.out.println("Message: " + message.getContent() );
+							
+							// WallSignal update
+							if ( message.getParameter( ML.CONTENT ).startsWith( "((WallSignal" ) )
+								getCurrentState().handleEvent( iRobotCommands.Sensor.WallSignal, (short) Integer.parseInt( message.getParameter( ML.CONTENT ).substring( 13, message.getParameter( ML.CONTENT ).length() - 2 ) ) );
+							
+							// Angle update
+							else if ( message.getParameter( ML.CONTENT ).startsWith( "((Angle " ) )
+								getCurrentState().handleEvent( iRobotCommands.Sensor.Angle, (short) Integer.parseInt( message.getParameter( ML.CONTENT ).substring( 8, message.getParameter( ML.CONTENT ).length() - 2 ) ) );
+						}
+					} catch (ClassNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                }
+            }
+        }
+    }
 	
 	//************ STATES ***************************
 	//***********************************************
@@ -377,7 +415,8 @@ public class WallMeasurer extends StateBasedController {
 					}
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
-					setState( wandering );
+					//setState( wandering );
+					setState( waitingState );
 				}
 			}).start();
 		}
@@ -401,6 +440,9 @@ public class WallMeasurer extends StateBasedController {
 				public void run() {
 					try {
 						System.out.println(getURL().getFile()+" enter state waiting thread started.");
+						
+						// Ensure robot is active and ready
+						tellRobot( "(iRobot.mode 2)" );
 						
 						// Testing...
 						tellRobot( "(iRobot.drive 100)" );
@@ -647,7 +689,7 @@ public class WallMeasurer extends StateBasedController {
 						maxWallSignal = 0;
 						angleOfMaxWallSignal = 0;
 						System.out.println("Begin calibration...");
-						tellRobot( "(iRobot.rotate-deg 360)" );
+						tellRobot( "(iRobot.drive 10 1)" );
 						
 						// Allow time to catch up...
 						CASAUtil.sleepIgnoringInterrupts(10000, null);
@@ -681,14 +723,14 @@ public class WallMeasurer extends StateBasedController {
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
 			switch (sensor) {
-			case WallSignal: // Can't seem to ever trigger this
+			case WallSignal: 
 				System.out.println("Wall signal received: " + reading);
 				if ( calibrating && reading > maxWallSignal ) {
 					maxWallSignal = reading;
 					angleOfMaxWallSignal = currentAngle + angleOfMaxWallSignal;
 				}
 				break;
-			case Angle: // Or this
+			case Angle: 
 				System.out.println("Angle received: " + reading);
 				if ( calibrating )
 					currentAngle = reading;
