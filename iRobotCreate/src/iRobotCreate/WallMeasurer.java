@@ -191,6 +191,7 @@ public class WallMeasurer extends StateBasedController {
 		
 		registerState( align1State );
 		registerState( align1 );
+		registerState( align2 );
 		registerState( wandering );
 	}
 	
@@ -545,8 +546,10 @@ public class WallMeasurer extends StateBasedController {
 						break;
 					case 3:
 						wallLength = 0;
-						tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20))");
-						setState(align1);
+						//just tell the robot to turn 90 degrees. Align doesn't work well with
+						//the corner turn because it requires being really close to the wall,
+						//which is not guaranteed by the time the robot gets close to the end.
+						tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 90) (irobot.drive 30))");
 						break;
 					default:
 						break;
