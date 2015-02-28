@@ -195,7 +195,6 @@ public class WallMeasurer extends StateBasedController {
 		
 		registerState( align1State );
 		registerState( align1 );
-		registerState( align2 );
 		registerState( wandering );
 	}
 	
@@ -579,36 +578,29 @@ public class WallMeasurer extends StateBasedController {
 					
 				case BumpsAndWheelDrops:
 					
-					switch (reading & 3) {
-					case 0:
-						break;
-					case 1:
-					case 2:
-						tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive 30))" );
-						break;
-					case 3:
-						wallLength = 0;
-						//just tell the robot to turn 90 degrees. Align doesn't work well with
-						//the corner turn because it requires being really close to the wall,
-						//which is not guaranteed by the time the robot gets close to the end.
-						tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 90) (irobot.drive 30))");
-						break;
-					default:
-						break;
-					}
 					
+					if ((reading & 3) == 0)
+						break;					
+					
+					// Stop the robot
+					tellRobot( "(irobot.drive 0)" );
+
+					// Back up a little bit
+					tellRobot( "(irobot.moveby -20)" );
+					
+					// Reset our wallLength
+					wallLength = 0;
+					
+					// Transition to align2
+					setState(align1);
+					
+					break;
+						
 				case Distance:					
 					
 					// Update the length of the wall we're currently measuring
 					wallLength += (int)reading;
 					break;
-				
-				case Wall:
-					
-					if (reading == 0) {
-						tellRobot( "(irobot.drive 0 :flush T)");
-						setState(align2);
-					}
 					
 				default:
 					break;
@@ -616,29 +608,7 @@ public class WallMeasurer extends StateBasedController {
 			
 		}
 	};
-	
-	IRobotState align2 = new IRobotState("align2") {
 
-		public void enterState() {
-			tellRobot("(irobot.drive 5 -1)");
-		}
-		
-		@Override
-		public void handleEvent(Sensor sensor, short reading) {
-			switch(sensor) {
-			case Wall:
-				if (reading == 1) {
-					tellRobot("(irobot.drive 0 :flush T");
-					setState(traversalState);
-				}
-			default:
-				break;
-			}
-			
-		}
-		
-	};
-	
 	
 	/**
 	 * Victory state entered once the virtual wall has been fully measured.
