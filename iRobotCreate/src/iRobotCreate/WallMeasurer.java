@@ -1082,7 +1082,8 @@ public class WallMeasurer extends StateBasedController {
 	 * @return long Measurement thus far of the wall the robot is currently traversing
 	 */
 	public long getMeasurement() {
-		return wallMeasurement / 10;
+		// Correct measurement by adding the diameter of the robot and the approximate distance we start away from the initial wall.
+		return (long) ( wallMeasurement + iRobotCommands.chassisDiameter + 20 ) / 10;
 	}
 
 }
