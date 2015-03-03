@@ -252,28 +252,14 @@ public class WallMeasurer extends StateBasedController {
 					"(all ?x (WallSignal ?x))", null)
 							{
 				
-								/*@Override
+								@Override
 								protected void update(URLDescriptor agentB, Term term) {
 									if (term==null)
 										return;
 									String intString = term.toString();
 									int val = Integer.parseInt(intString);
-								}*/
-							};
-							
-			@SuppressWarnings("unused")
-			SubscribeClientConversation convAngle = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (Angle ?x))", null)
-							{
-								/*@Override
-								protected void update(URLDescriptor agentB, Term term) {
-									if (term==null)
-										return;
-									String intString = term.toString();
-									int val = Integer.parseInt(intString);
-								}*/
+									onWallSignal(val);
+								}
 							};
 							
 			@SuppressWarnings("unused")
@@ -314,13 +300,14 @@ public class WallMeasurer extends StateBasedController {
 					this, server, 
 					"(all ?x (VirtualWall ?x))", null)
 			{
-				/*@Override
+				@Override
 				protected void update(URLDescriptor agentB, Term exp) {
 					if (exp==null)
 						return;
 					String intString = exp.toString();
 					int val = Integer.parseInt(intString);
-				}*/
+					onVirtualWall(val);
+				}
 			};
 			
 			@SuppressWarnings("unused")
@@ -826,6 +813,14 @@ public class WallMeasurer extends StateBasedController {
 	 */
 	protected void onDistanceAcc(int val) {
 		getCurrentState().handleEvent(Sensor.Unused1, (short)val);
+	}
+	
+	protected void onWallSignal(int val) {
+		getCurrentState().handleEvent(Sensor.WallSignal, (short)val);
+	}
+	
+	protected void onVirtualWall(int val) {
+		getCurrentState().handleEvent(Sensor.VirtualWall, (short)val);
 	}
 
 	/**
