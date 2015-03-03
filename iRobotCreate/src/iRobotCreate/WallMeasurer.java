@@ -21,6 +21,20 @@ import casa.Status;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.Environment;
 
+/**
+ * WallMeasurer class, as a subtype of StateBasedController, is used as a controller for a wall-measuring iRobotCreate agent.
+ * This controller implements the Command console commands (report), (reset), and (measure). (report) prints current state, measurement data, and any errors/warnings.
+ * (reset) returns the robot to an idling state, awaiting commands. (measure) begins a measurement task, in which the robot measures the length (in cm) of some wall indicated
+ * by a VirtualWall emitter. It does so by driving forward until bumping into a wall. If the robot does not bump the wall head-on, it resumes wandering until it does hit a wall head-on.
+ * It then aligns itself parallel to the wall and traverses this and the following walls, turning corners. Wall measurements are continuous and reset on turning. Once the virtual wall is 
+ * detected, and the measurement of this wall completed, the robot celebrates with a victory song.
+ * The robot has an internal time limit of 10 minutes from startup for its measurement task; at this point it plays a sad tune, but may continue its measurement.
+ *  
+ * @author Joel Nielsen
+ *         Hugo Richard
+ *         Jeffrey Spooner
+ *         Sara Williamson
+ */
 public class WallMeasurer extends StateBasedController {
 	
 	// Status variables: length of wall measured (in cm); whether or not virtual wall has been measured; whether or not virtual wall has been detected
