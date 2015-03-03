@@ -124,16 +124,6 @@ public class WallMeasurer extends StateBasedController {
 		// Success
 		return new Status( 0 );
 	}
-
-	@Override
-	public void setState(IRobotState s) {
-		super.setState(s);
-		
-		// Debugging: display state
-		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Changed state: " + getCurrentState().getName() + "\nWallMeasure: " + wallMeasurement );
-		
-		
-	}
 	
 	/**
 	 * Command line lisp command to reset the robot's state.
@@ -375,14 +365,19 @@ public class WallMeasurer extends StateBasedController {
 	
 	/**
 	 * Utility function for sending a command to the robot agent.
+	 * 
+	 * This method is based on Rob Kremer's code; see CliffCalibratingController.sendCommand() for his original code.
+	 * 
 	 * @param command A lisp command, enclosed in a string, to send the robot agent
 	 */
 	protected void tellRobot( String command ) {
 		try {
-			sendMessage(ML.REQUEST, ML.EXECUTE, getServer()
+			
+			sendMessage( ML.REQUEST, ML.EXECUTE, getServer()
 					, ML.LANGUAGE, "Lisp"
 					, ML.CONTENT, command
 					);
+			
 			} catch (Throwable e) {
 			println("error", "WallMeasurer.tellRobot", e);
 			errors.add( "WallMeasurer.tellRobot: " + e );
