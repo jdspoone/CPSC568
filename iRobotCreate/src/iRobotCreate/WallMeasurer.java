@@ -1,13 +1,9 @@
 package iRobotCreate;
 
-import java.text.ParseException;
-import java.util.Observable;
 
 import jade.semantics.lang.sl.grammar.Term;
 import casa.LispAccessible;
 import casa.ML;
-import casa.MLMessage;
-import casa.ObserverNotification;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
@@ -659,16 +655,15 @@ public class WallMeasurer extends StateBasedController {
 							
 							// If this is not the first wall we hit (ie. we have completed a full measurement of this wall)
 							// and this wall is marked by the virtual wall signal, congratulations! Measurement task is complete.
-							if ( !isFirstWall && foundVirtualWall )
+							if ( !isFirstWall && foundVirtualWall ) {
 								setState( victoryState );
-							
-
-							//wallMeasurement2 = 0 ;
-							// Otherwise, turn the corner; align to the new wall
-							isFirstWall = false; // We can traverse this new wall fully, corner to corner
-							tellRobot("(irobot.moveby -20)");
-							setState(align1);
-								
+							} else {
+								//wallMeasurement2 = 0 ;
+								// Otherwise, turn the corner; align to the new wall
+								isFirstWall = false; // We can traverse this new wall fully, corner to corner
+								tellRobot("(irobot.moveby -20)");
+								setState(align1);
+							}
 							break;
 						default:
 							break;
@@ -717,6 +712,7 @@ public class WallMeasurer extends StateBasedController {
 					break;
 						
 				case VirtualWall:
+					
 					
 					// Debugging: display state
 					( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VirtualWall: " + reading );
@@ -818,6 +814,11 @@ public class WallMeasurer extends StateBasedController {
 	protected void onWallSignal(int val) {
 		getCurrentState().handleEvent(Sensor.WallSignal, (short)val);
 	}
+	
+	/**
+	 * This gets called when the controller is notified of an encounter with a virtual wall.
+	 * @param val
+	 */
 	
 	protected void onVirtualWall(int val) {
 		getCurrentState().handleEvent(Sensor.VirtualWall, (short)val);
