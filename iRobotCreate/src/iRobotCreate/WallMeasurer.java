@@ -540,18 +540,22 @@ public class WallMeasurer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
+						
 						System.out.println(getURL().getFile()+" enter state waiting thread started.");
 						
-						// Ensure robot is active and ready
+						// Ensure robot is active and ready in safe mode.
 						tellRobot( "(iRobot.mode 2)" );
 						
 					} catch (Throwable e) {
 						println("error", "WallMeasurer.enterState() [state=waiting]: Unexpected error in state thread", e);
 						errors.add( "WallMeasurer.enterState() [state=waiting]: " + e );
 					}
+				
 					System.out.println(getURL().getFile()+" enter state waiting thread ended.");
+
 				}
 			}).start();
+
 		}
 		
 		@Override
@@ -888,10 +892,7 @@ public class WallMeasurer extends StateBasedController {
 		}
 		
 	};
-	
-	
-	
-	
+		
 	/**
 	 * Victory state entered once the virtual wall has been fully measured.
 	 * The controller's command panel is updated with the results of the measurement;
@@ -903,14 +904,15 @@ public class WallMeasurer extends StateBasedController {
 		public void enterState() {
 			
 			makeSubthread( new Runnable() {
+				
 				@Override
 				public void run() {
 					try {
-						// Allow time to catch up...
-						CASAUtil.sleepIgnoringInterrupts(10000, null);
-						
 						System.out.println(getURL().getFile()+" enter state victory thread started.");
-						
+
+						// Allow time to catch up...
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
+												
 						// Woot! We measured the wall!
 						isVictory = true;
 						
@@ -919,9 +921,8 @@ public class WallMeasurer extends StateBasedController {
 						
 						// Play victory song
 						tellRobot( "(iRobot.execute \"141 1\")" );
-						CASAUtil.sleepIgnoringInterrupts( 4000, null );
+						CASAUtil.sleepIgnoringInterrupts( 5000, null ); // Wait for song to finish
 						tellRobot( "(iRobot.execute \"141 2\")" );
-						
 						
 						// Power down
 						tellRobot( "(iRobot.mode 0)" );
@@ -930,7 +931,9 @@ public class WallMeasurer extends StateBasedController {
 						println("error", "WallMeasurer.enterState() [state=victory]: Unexpected error in state thread", e);
 						errors.add( "WallMeasurer.enterState() [state=victory]: " + e );
 					}
+					
 					System.out.println(getURL().getFile()+" enter state victory thread ended.");
+					
 				}
 			}).start();
 		}
