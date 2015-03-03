@@ -46,6 +46,8 @@ public class WallMeasurer extends StateBasedController {
 	public boolean isAlmostVictory = false ; 	// True if the robot is at the beginning of the virtual wall and has only
 												//to measure it
 	
+	public boolean debugMode = false;		// Display debug messages for state/measurements on Command console
+	
 	// Store errors encountered to display on "report" command
 	private java.util.LinkedList<String> errors = new java.util.LinkedList<String>();
 	
@@ -149,6 +151,36 @@ public class WallMeasurer extends StateBasedController {
 		
 		// Success
 		return new Status( 0 );
+	}
+	
+	/**
+	 * Command line lisp command to set or unset debug mode.
+	 * In this state, state changes and measurements are printed to the Command console.
+	 * 
+	 * @return Status 0 if successful
+	 */
+	@LispAccessible( name = "debug", help = "Toggle debug mode, which displays state changes and interim measurements in the Command console." )
+	public Status debug() {
+
+		if ( debugMode )
+			debugMode = false;
+		else
+			debugMode = true;
+		
+		// Success
+		return new Status( 0 );
+	}
+	
+	/**
+	 * Print debug messages on state change, if in debug mode.
+	 */
+	@Override
+	public void setState(String stateName) {
+		super.setState( stateName );
+		
+		if ( debugMode )
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + stateName + "\nWall measurement: " + getMeasurement() );
+			
 	}
 
 	/**
