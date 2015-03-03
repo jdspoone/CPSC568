@@ -414,9 +414,10 @@ public class WallMeasurer extends StateBasedController {
 	//***********************************************
 
 	/**
-	 * Start up the robot proxy. Play a short song to indicate robot is online.
-	 * Reset variables as necessary.
-	 * Fire a time-out message for after 10 minutes have elapsed.
+	 * Initialize the robot proxy: Load songs and play a short song to indicate the robot is online; 
+	 * reset state variables as necessary; and fire a time-out message scheduled for ten minutes in the future.
+	 * 
+	 * After startup, the robot should be in "waiting" state, awaiting commands from the WallMeasurer's Command console.
 	 */
 	IRobotState startState = new IRobotState( "start" ) {
 	
@@ -427,34 +428,38 @@ public class WallMeasurer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
-						// Load a cheery tune. Credits to http://air.imag.fr/images/1/1b/ImperialMarch.pde.txt
+
+						// Load short songs for startup, victory, and time-out.
+						// Credits to http://air.imag.fr/images/1/1b/ImperialMarch.pde.txt
 						tellRobot( "(iRobot.execute \"140 1 9 69 32 69 32 69 32 65 22 72 10 69 32 65 22 72 10 69 64\")" );
 						tellRobot( "(iRobot.execute \"140 2 9 76 32 76 32 76 32 77 22 68 10 69 32 65 22 72 10 69 64\")" );
-						
-						// Load a sad tune.
 						tellRobot( "(iRobot.execute \"140 3 4 57 32 57 32 57 32 53 64\")" );
 						
 						// Since my machine is slow, give it time to catch up...
-						CASAUtil.sleepIgnoringInterrupts(10000, null);
+						CASAUtil.sleepIgnoringInterrupts( 10000, null );
 						
 						System.out.println(getURL().getFile()+" enter state start thread started.");
 						
-						// Sing a pretty song.
+						// Command the robot to sing its startup song. Wait (approximately) for this message to go through, and the song to begin.
 						tellRobot( "(iRobot.execute \"141 1\")" );
-						CASAUtil.sleepIgnoringInterrupts(10000, null);
+						CASAUtil.sleepIgnoringInterrupts( 10000, null );
 						
 						
-						// Fire time event for 10 minutes in the future
+						// Fire a one-time TimeEvent scheduled for 10 minutes in the future
 						try {
+							
 							TimeEvent timeout = new TimeEvent( "event", getAgent(), System.currentTimeMillis() + 10 * 60 * 1000 ) {
-							 	@Override
+
+								/**
+								 * When timeout occurs, indicate this by turning the power LED red and playing a pathetic song.
+								 */
+								@Override
 								public void fireEvent() {
 							 		super.fireEvent();
 							 		
-							 		// When (if) timeout occurs, and the victory conditions have not been met,
+							 		// When (if) timeout occurs, and the robot has not yet succeeded in measuring the virtual wall,
 							 		// play a sad song on the robot; turn power LED red
 							 		if ( !isVictory ) {
-							 			System.out.println( "Oops, timeout occurred..." );
 							 			
 										// Turn power LED red.
 										tellRobot( "(iRobot.LED 255 255)" );
@@ -466,29 +471,34 @@ public class WallMeasurer extends StateBasedController {
 							 	}
 							
 							};
+						
 							timeout.start();
 							
 						} catch ( Throwable e ) {
-							println( "error", "WallMeasurer.start", e );
-							errors.add( "WallMeasurer.start: " + e );
+							println("error", "WallMeasurer.enterState() [state=start]: Unexpected error in state thread", e);
+							errors.add( "WallMeasurer.enterState() [state=start]: " + e );
 						}
 						
 					} catch (Throwable e) {
 						println("error", "WallMeasurer.enterState() [state=start]: Unexpected error in state thread", e);
 						errors.add( "WallMeasurer.enterState() [state=start]: " + e );
 					}
+
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
-					setState( wandering );
-					//setState( waitingState );
+					// Set robot in "waiting" state, ready for command input.
+					setState( waitingState );
 				}
+				
 			}).start();
+			
 		}
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
 			// Not needed
 		}
+		
 	};
 	
 	/**
