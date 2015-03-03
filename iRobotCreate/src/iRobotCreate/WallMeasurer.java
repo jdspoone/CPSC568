@@ -37,15 +37,14 @@ import iRobotCreate.simulator.Environment;
  */
 public class WallMeasurer extends StateBasedController {
 	
-	// Status variables: length of wall measured (in cm); whether or not virtual wall has been measured; whether or not virtual wall has been detected
-	private long wallMeasurement = 0;
-	public boolean isVictory = false;
-	public boolean foundVirtualWall = false;
-	public boolean isFirstWall = true;
+	// Status variables:
+	private long wallMeasurement = 0; // length of wall measured (in mm)
+	public boolean isVictory = false; // whether or not virtual wall has been measured
+	public boolean foundVirtualWall = false; // whether or not the current wall is the virtual wall
+	public boolean isFirstWall = true; // whether or not the current wall is the first wall; as we may start our traversal at pretty much any point along this wall, our measurement data is garbage. Ignore it.
 	
-	public boolean isAlmostVictory = false ;
-	// True if the robot is at the beginning of the virtual wall and has only
-	//to measure it
+	public boolean isAlmostVictory = false ; 	// True if the robot is at the beginning of the virtual wall and has only
+												//to measure it
 	
 	// Store errors encountered to display on "report" command
 	private java.util.LinkedList<String> errors = new java.util.LinkedList<String>();
