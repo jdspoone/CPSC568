@@ -390,6 +390,7 @@ public class WallMeasurer extends StateBasedController {
 	 * The controller examines the content of incoming inform-ref messages, and, upon notification
 	 * from one of the sensors of interest, it will trigger an event handler for that sensor update.
 	 */
+	/* [Deprecated]
 	public void update( Observable o, Object arg ) {
         // Check that the event arg is a proper notification and not garbage
         if ( arg instanceof ObserverNotification ) {
@@ -434,7 +435,7 @@ public class WallMeasurer extends StateBasedController {
                 }
             }
         }
-    }
+    }*/
 	
 	//************ STATES ***************************
 	//***********************************************
