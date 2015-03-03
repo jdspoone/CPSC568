@@ -23,11 +23,12 @@ import iRobotCreate.simulator.Environment;
 
 public class WallMeasurer extends StateBasedController {
 	
-	// Status variables: length of wall measured (in cm); whether or not virtual wall has been measured; whether or not virtual wall has been detected
-	private long wallMeasurement = 0;
-	public boolean isVictory = false;
-	public boolean foundVirtualWall = false;
-	public boolean isFirstWall = true;
+	// Status variables: 
+	private long wallMeasurement = 0; //length of wall measured (in cm)
+	//private long wallMeasurement2 = 0 ;
+	public boolean isVictory = false; //; whether or not virtual wall has been measured
+	public boolean foundVirtualWall = false; //whether or not virtual wall has been detected
+	public boolean isFirstWall = true; // whether the robot has seen a wall already.
 	
 	
 	// Store errors encountered to display on "report" command
@@ -51,6 +52,7 @@ public class WallMeasurer extends StateBasedController {
 		wallMeasurement = 0;
 		isVictory = false;
 		foundVirtualWall = false;
+		isFirstWall = true;
 		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
@@ -132,6 +134,7 @@ public class WallMeasurer extends StateBasedController {
 		wallMeasurement = 0;
 		isVictory = false;
 		foundVirtualWall = false;
+		isFirstWall = true;
 		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
@@ -203,15 +206,29 @@ public class WallMeasurer extends StateBasedController {
 	public WallMeasurer( ParamsMap params, AgentUI ui ) throws Exception {
 		super( params, ui );
 
-		// Register all valid states for a WallMeasurer agent
-		registerState( startState );
-		registerState( waitingState );
-		registerState( traversal1 );
-		registerState( victoryState );
+		// Register all valid states for a WallMeasurer agent: a short description is provided here
+		// A longer description is available where the states are implemented.
 		
+		//Starting state
+		registerState( startState );
+		
+		// State entered when the command wait is typed
+		registerState( waitingState ); 
+		
+		// State entered after Starting state: The robot is exploring the map
+		// until its left and right sensor are activated at the same time
+		registerState( wandering ); 
+		
+		// State entered after Wandering or Traversal1: It tries to align the robot paralel to the wall
 		registerState( align1 );
-		registerState( align2 );
-		registerState( wandering );
+		
+		// State entered after align 1
+		// This state is responsible for making the robot go along the wall.
+		// It also takes care of the measurement of the wall
+		registerState( traversal1 );
+		
+		// When the wall has been measured we are done, we enter the victory state
+		registerState( victoryState );
 	}
 	
 	/**
@@ -222,11 +239,8 @@ public class WallMeasurer extends StateBasedController {
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
 		
-		
-		
 		/*
-		 * Supposedly this is a way to get sensor readings, but I can't seem to get this to work.
-		 * Instead, this controller should observe its incoming messages for inform-ref replies to these subscriptions.
+		 This controller should observe its incoming messages for inform-ref replies to these subscriptions.
 		 */
 		this.addObserver( this );
 		try {
@@ -473,7 +487,6 @@ public class WallMeasurer extends StateBasedController {
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
 					setState( wandering );
-					//setState( waitingState );
 				}
 			}).start();
 		}
@@ -602,7 +615,21 @@ public class WallMeasurer extends StateBasedController {
 			}
 		};
 			
-	// First traversal state
+	/* Traversal state
+	*  This state makes the robot goes along the wall
+	*  
+	*  The robot is always measuring, it reset its measurement when it hits a corner.
+	*  
+	*  If the robot deviates to much, we adjust its trajectory. This is done by
+	*  using the wall signal sensor.
+	*  
+	*  If the robot hits the wall signal two situations can occur:
+	*  	- The wall is the first the robot has seen so it has not done the 
+	*  		measurement since the beginning of the wall -> We ignore the wall signal
+	*  	- The wall is not the first one, it has measured the beginning of the wall already
+	*  		the next time it hits a corner, it has measured the entire wall -> we are done.
+	*/
+		
 	IRobotState traversal1 = new IRobotState("traversal1") {
 			
 		private final int allowedDeviation = 25;
@@ -642,12 +669,14 @@ public class WallMeasurer extends StateBasedController {
 							break;
 						case 3: // Hit a corner
 								
-//							wallMeasurement = 0 ;
+							
 							// If this is not the first wall we hit (ie. we have completed a full measurement of this wall)
 							// and this wall is marked by the virtual wall signal, congratulations! Measurement task is complete.
 							if ( !isFirstWall && foundVirtualWall )
 								setState( victoryState );
 							
+
+							//wallMeasurement2 = 0 ;
 							// Otherwise, turn the corner; align to the new wall
 							isFirstWall = false; // We can traverse this new wall fully, corner to corner
 							tellRobot("(irobot.moveby -20)");
@@ -661,7 +690,7 @@ public class WallMeasurer extends StateBasedController {
 				/*case Distance:					
 							
 					// Update the length of the wall we're currently measuring
-					wallMeasurement += (int)reading;
+					wallMeasurement2 += (int)reading;
 					break;*/
 					
 				case Unused1: // DistanceAcc update
@@ -712,28 +741,6 @@ public class WallMeasurer extends StateBasedController {
 					break;
 			}
 		}
-	};
-	
-	IRobotState align2 = new IRobotState("align2") {
-
-		public void enterState() {
-			tellRobot("(irobot.drive 5 -1)");
-		}
-		
-		@Override
-		public void handleEvent(Sensor sensor, short reading) {
-			switch(sensor) {
-			case Wall:
-				if (reading == 1) {
-					tellRobot("(irobot.drive 0 :flush T");
-					setState(traversal1);
-				}
-			default:
-				break;
-			}
-			
-		}
-		
 	};
 	
 	
