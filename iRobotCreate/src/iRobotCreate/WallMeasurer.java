@@ -274,7 +274,7 @@ public class WallMeasurer extends StateBasedController {
 								}
 							};
 							
-			@SuppressWarnings("unused")
+			/*@SuppressWarnings("unused")
 			SubscribeClientConversation convDistance = new SubscribeClientConversation(
 					"--subscription-request", 
 					this, server, 
@@ -288,7 +288,7 @@ public class WallMeasurer extends StateBasedController {
 									int val = Integer.parseInt(intString);
 									onDistance(val);
 								}
-							};
+							};*/
 							
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convVirtualWall = new SubscribeClientConversation(
@@ -618,11 +618,12 @@ public class WallMeasurer extends StateBasedController {
 		private final int allowedDeviation = 25;
 		private final int correctionAngle = 3;
 			
-		private int initialWallSignal = 0;
+		private int initialWallSignal;
 		private int initialWallDistanceAcc = 0;
 			
 		public void enterState() {
 			initialWallDistanceAcc = 0;
+			initialWallSignal = 0;
 			wallMeasurement = 0;
 
 			// We're not concerned with measuring the wall we are traversing, begin moving forward.
@@ -739,16 +740,7 @@ public class WallMeasurer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
-				@Override
-				public void run() {
-					try {
-						// Allow time to catch up...
-						CASAUtil.sleepIgnoringInterrupts(10000, null);
-						
-						System.out.println(getURL().getFile()+" enter state victory thread started.");
-						
-						// Woot! We measured the wall!
+			
 						isVictory = true;
 						
 						// Display results to controller's Command console
@@ -763,13 +755,7 @@ public class WallMeasurer extends StateBasedController {
 						// Power down
 						tellRobot( "(iRobot.mode 0)" );
 						
-					} catch (Throwable e) {
-						println("error", "WallMeasurer.enterState() [state=victory]: Unexpected error in state thread", e);
-						errors.add( "WallMeasurer.enterState() [state=victory]: " + e );
-					}
-					System.out.println(getURL().getFile()+" enter state victory thread ended.");
-				}
-			}).start();
+					
 		}
 		
 		@Override
