@@ -21,7 +21,6 @@ public class WallMeasurer extends StateBasedController {
 	
 	// Status variables: 
 	private long wallMeasurement = 0; //length of wall measured (in cm)
-	//private long wallMeasurement2 = 0 ;
 	public boolean isVictory = false; //; whether or not virtual wall has been measured
 	public boolean foundVirtualWall = false; //whether or not virtual wall has been detected
 	public boolean isFirstWall = true; // whether the robot has seen a wall already.
@@ -643,7 +642,6 @@ public class WallMeasurer extends StateBasedController {
 							if ( !isFirstWall && foundVirtualWall ) {
 								setState( victoryState );
 							} else {
-								//wallMeasurement2 = 0 ;
 								// Otherwise, turn the corner; align to the new wall
 								isFirstWall = false; // We can traverse this new wall fully, corner to corner
 								tellRobot("(irobot.moveby -20)");
