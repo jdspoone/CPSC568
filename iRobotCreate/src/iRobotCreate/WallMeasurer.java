@@ -273,23 +273,7 @@ public class WallMeasurer extends StateBasedController {
 									onWall(val);
 								}
 							};
-							
-			/*@SuppressWarnings("unused")
-			SubscribeClientConversation convDistance = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (Distance ?x))", null)
-							{
-								@Override
-								protected void update(URLDescriptor agentB, Term exp) {
-									if (exp==null)
-										return;
-									String intString = exp.toString();
-									int val = Integer.parseInt(intString);
-									onDistance(val);
-								}
-							};*/
-							
+														
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convVirtualWall = new SubscribeClientConversation(
 					"--subscription-request", 
@@ -669,13 +653,7 @@ public class WallMeasurer extends StateBasedController {
 						default:
 							break;
 					}
-							
-				/*case Distance:					
-							
-					// Update the length of the wall we're currently measuring
-					wallMeasurement2 += (int)reading;
-					break;*/
-					
+												
 				case Unused1: // DistanceAcc update
 					
 					// Update length of wall we're currently traversing
@@ -782,11 +760,6 @@ public class WallMeasurer extends StateBasedController {
 	
 	protected void onWall(int val) {
 		getCurrentState().handleEvent(Sensor.Wall, (short)val);
-	}
-
-
-	protected void onDistance(int val) {
-		getCurrentState().handleEvent(Sensor.Distance, (short)val);
 	}
 	
 	/**
