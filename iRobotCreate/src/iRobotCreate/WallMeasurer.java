@@ -672,7 +672,6 @@ public class WallMeasurer extends StateBasedController {
 								
 						// And the current reading is greater than 0
 						if (signal > 0) {
-							System.out.println("Setting inital wall signal to " + (int)reading);
 							initialWallSignal = signal;
 						}
 					}
@@ -683,7 +682,6 @@ public class WallMeasurer extends StateBasedController {
 						// If the given reading is outside of the allowed deviation, adjust course
 						if (signal > (initialWallSignal + allowedDeviation) || signal < (initialWallSignal - allowedDeviation)) {
 							int correctionFactor = signal > initialWallSignal ? correctionAngle : -correctionAngle;
-							System.out.println("Adjusting course by " + correctionFactor);
 							tellRobot( "(irobot.rotate-deg " + correctionFactor + ")" );
 							tellRobot( "(irobot.drive 30)" );
 						}
