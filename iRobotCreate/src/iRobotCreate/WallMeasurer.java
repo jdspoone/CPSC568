@@ -627,16 +627,19 @@ public class WallMeasurer extends StateBasedController {
 				case BumpsAndWheelDrops:
 						
 					switch (reading & 3) {
+						// In the case that we get a sensor reading of zero, do nothing
 						case 0:
 							break;
+						
+						// In the case that only 1 of the 2 bump sensors register, readjust
 						case 1:
 						case 2:
 							// This should never happen now...
 							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive 30))" );
 							break;
-						case 3: // Hit a corner
-								
 							
+						// In the case that both of the sensors register, we're either done, or we back slightly and enter alignState
+						case 3: 
 							// If this is not the first wall we hit (ie. we have completed a full measurement of this wall)
 							// and this wall is marked by the virtual wall signal, congratulations! Measurement task is complete.
 							if ( !isFirstWall && foundVirtualWall ) {
