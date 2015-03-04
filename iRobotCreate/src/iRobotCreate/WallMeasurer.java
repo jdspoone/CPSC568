@@ -54,7 +54,7 @@ public class WallMeasurer extends StateBasedController {
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
 		
 		// Enter first wall-finding state
-		setState( wandering );
+		setState( wanderingState );
 		
 		// Success
 		return new Status( 0 );
@@ -213,15 +213,15 @@ public class WallMeasurer extends StateBasedController {
 		
 		// State entered after Starting state: The robot is exploring the map
 		// until its left and right sensor are activated at the same time
-		registerState( wandering ); 
+		registerState( wanderingState ); 
 		
 		// State entered after Wandering or Traversal1: It tries to align the robot paralel to the wall
-		registerState( align1 );
+		registerState( alignState );
 		
 		// State entered after align 1
 		// This state is responsible for making the robot go along the wall.
 		// It also takes care of the measurement of the wall
-		registerState( traversal1 );
+		registerState( traversalState );
 		
 		// When the wall has been measured we are done, we enter the victory state
 		registerState( victoryState );
@@ -453,7 +453,7 @@ public class WallMeasurer extends StateBasedController {
 					}
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
-					setState( wandering );
+					setState( wanderingState );
 				}
 			}).start();
 		}
@@ -503,7 +503,7 @@ public class WallMeasurer extends StateBasedController {
 	 * and right bumpers, the robot backs up a bit and goes into the first alignment state.
 	 */
 	
-	IRobotState wandering = new IRobotState("wandering") {
+	IRobotState wanderingState = new IRobotState("wanderingState") {
 		@Override
 		public void enterState() {
 			
@@ -528,7 +528,7 @@ public class WallMeasurer extends StateBasedController {
 							isFirstWall = true; // Align to traverse this new wall. Since it is the first wall, we might be anywhere along its length, so measurement will be incomplete.
 												// Set this variable so we don't send off any incomplete reports or victory flags.
 							tellRobot("(progn () (irobot.drive 0) (irobot.moveby -20))");
-							setState(align1);
+							setState(alignState);
 					}
 					
 					//if we have a degree to adjust by that's greater than 0, let's go ahead
@@ -556,7 +556,7 @@ public class WallMeasurer extends StateBasedController {
 		 */
 		
 		private final int rotateBack = -27; //degrees to rotate back
-		IRobotState align1 = new IRobotState("align1") {
+		IRobotState alignState = new IRobotState("alignState") {
 			
 			
 			boolean wallSeen = false; // this may not be strictly necessary
@@ -571,7 +571,7 @@ public class WallMeasurer extends StateBasedController {
 					case 0:
 						if (wallSeen) {
 							tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg "+rotateBack+"))");
-							setState(traversal1);
+							setState(traversalState);
 						}
 					case 1:
 						wallSeen = true;
@@ -597,7 +597,7 @@ public class WallMeasurer extends StateBasedController {
 	*  		the next time it hits a corner, it has measured the entire wall -> we are done.
 	*/
 		
-	IRobotState traversal1 = new IRobotState("traversal1") {
+	IRobotState traversalState = new IRobotState("traversalState") {
 			
 		private final int allowedDeviation = 25;
 		private final int correctionAngle = 3;
@@ -647,7 +647,7 @@ public class WallMeasurer extends StateBasedController {
 								// Otherwise, turn the corner; align to the new wall
 								isFirstWall = false; // We can traverse this new wall fully, corner to corner
 								tellRobot("(irobot.moveby -20)");
-								setState(align1);
+								setState(alignState);
 							}
 							break;
 						default:
