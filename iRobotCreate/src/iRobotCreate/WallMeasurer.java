@@ -17,14 +17,29 @@ import casa.Status;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.Environment;
 
+/**
+ * WallMeasurer class, as a subtype of StateBasedController, is used as a controller for a wall-measuring iRobotCreate agent.
+ * This controller implements the Command console commands (report), (reset), and (measure). (report) prints current state, measurement data, and any errors/warnings.
+ * (reset) returns the robot to an idling state, awaiting commands. (measure) begins a measurement task, in which the robot measures the length (in cm) of some wall indicated
+ * by a VirtualWall emitter. It does so by driving forward until bumping into a wall. If the robot does not bump the wall head-on, it resumes wandering until it does hit a wall head-on.
+ * It then aligns itself parallel to the wall and traverses this and the following walls, turning corners. Wall measurements are continuous and reset on turning. Once the virtual wall is 
+ * detected, and the measurement of this wall completed, the robot celebrates with a victory song.
+ * The robot has an internal time limit of 10 minutes from startup for its measurement task; at this point it plays a sad tune, but may continue its measurement.
+ *  
+ * @author Joel Nielsen
+ *         Hugo Richard
+ *         Jeffrey Spooner
+ *         Sara Williamson
+ */
 public class WallMeasurer extends StateBasedController {
 	
-	// Status variables: 
-	private long wallMeasurement = 0; //length of wall measured (in cm)
-	public boolean isVictory = false; //; whether or not virtual wall has been measured
-	public boolean foundVirtualWall = false; //whether or not virtual wall has been detected
-	public boolean isFirstWall = true; // whether the robot has seen a wall already.
+	// Status variables:
+	private long wallMeasurement = 0; // length of wall measured (in mm)
+	public boolean isVictory = false; // whether or not virtual wall has been measured
+	public boolean foundVirtualWall = false; // whether or not the current wall is the virtual wall
+	public boolean isFirstWall = true; // whether or not the current wall is the first wall; as we may start our traversal at pretty much any point along this wall, our measurement data is garbage. Ignore it.
 	
+	public boolean debugMode = false;		// Display debug messages for state/measurements on Command console
 	
 	// Store errors encountered to display on "report" command
 	private java.util.LinkedList<String> errors = new java.util.LinkedList<String>();
@@ -104,16 +119,6 @@ public class WallMeasurer extends StateBasedController {
 		// Success
 		return new Status( 0 );
 	}
-
-	@Override
-	public void setState(IRobotState s) {
-		super.setState(s);
-		
-		// Debugging: display state
-		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Changed state: " + getCurrentState().getName() + "\nWallMeasure: " + wallMeasurement );
-		
-		
-	}
 	
 	/**
 	 * Command line lisp command to reset the robot's state.
@@ -139,6 +144,36 @@ public class WallMeasurer extends StateBasedController {
 		
 		// Success
 		return new Status( 0 );
+	}
+	
+	/**
+	 * Command line lisp command to set or unset debug mode.
+	 * In this state, state changes and measurements are printed to the Command console.
+	 * 
+	 * @return Status 0 if successful
+	 */
+	@LispAccessible( name = "debug", help = "Toggle debug mode, which displays state changes and interim measurements in the Command console." )
+	public Status debug() {
+
+		if ( debugMode )
+			debugMode = false;
+		else
+			debugMode = true;
+		
+		// Success
+		return new Status( 0 );
+	}
+	
+	/**
+	 * Print debug messages on state change, if in debug mode.
+	 */
+	@Override
+	public void setState(String stateName) {
+		super.setState( stateName );
+		
+		if ( debugMode )
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + stateName + "\nWall measurement: " + getMeasurement() );
+			
 	}
 
 	/**
@@ -227,19 +262,24 @@ public class WallMeasurer extends StateBasedController {
 	}
 	
 	/**
-	 * Initialize the controller.
-	 * Enter start state.
+	 * Initialize the controller agent. Subscribe to the robot proxy for updates regarding
+	 * any sensors we care about - namely, Distance, Wall, WallSignal, and VirtualWall.
+	 * Finally, commence interaction by entering the start state.
 	 */
 	@Override
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
-		
+				
 		/*
-		 This controller should observe its incoming messages for inform-ref replies to these subscriptions.
+		 * Subscribe to the robot proxy.
+		 * This results in the appropriate handleEvent() case being triggered in the current controller state
+		 * whenever a sensor value is updated.
+		 * 
+		 * This method of subscribing to the robot proxy is heavily based on code by Rob Kremer; see iRobotCreate.Controller for his original code.
 		 */
-		this.addObserver( this );
 		try {
 			
+			// Subscribe to alerts for WallSignal updates
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convWallSignal = new SubscribeClientConversation(
 					"--subscription-request", 
@@ -253,16 +293,19 @@ public class WallMeasurer extends StateBasedController {
 										return;
 									String intString = term.toString();
 									int val = Integer.parseInt(intString);
-									onWallSignal(val);
+									onWallSignal( val );
 								}
+								
 							};
 							
+			// Subscribe to alerts for Wall updates
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convWall = new SubscribeClientConversation(
 					"--subscription-request", 
 					this, server, 
 					"(all ?x (Wall ?x))", null)
 							{
+
 								@Override
 								protected void update(URLDescriptor agentB, Term exp) {
 									if (exp==null)
@@ -271,30 +314,36 @@ public class WallMeasurer extends StateBasedController {
 									int val = Integer.parseInt(intString);
 									onWall(val);
 								}
+								
 							};
-														
+							
+			// Subscribe to alerts for VirtualWall updates
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convVirtualWall = new SubscribeClientConversation(
 					"--subscription-request", 
 					this, server, 
 					"(all ?x (VirtualWall ?x))", null)
 			{
+				
 				@Override
 				protected void update(URLDescriptor agentB, Term exp) {
 					if (exp==null)
 						return;
 					String intString = exp.toString();
 					int val = Integer.parseInt(intString);
-					onVirtualWall(val);
+					onVirtualWall( val );
 				}
+				
 			};
 			
+			// Subscribe to alerts for distanceAcc updates
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convDistanceAcc = new SubscribeClientConversation(
 					"--subscription-request", 
 					this, server, 
 					"(all ?x (distanceAcc ?x))", null)
 			{
+				
 				@Override
 				protected void update(URLDescriptor agentB, Term exp) {
 					if (exp==null)
@@ -303,28 +352,34 @@ public class WallMeasurer extends StateBasedController {
 					int val = Integer.parseInt(intString);
 					onDistanceAcc( val );
 				}
+				
 			};
 							
 							
 		} catch (IllegalOperationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+		// Start initializing the robot for its measurement task.
 		setState( startState );
 		
 	}
 	
 	/**
 	 * Utility function for sending a command to the robot agent.
+	 * 
+	 * This method is based on Rob Kremer's code; see CliffCalibratingController.sendCommand() for his original code.
+	 * 
 	 * @param command A lisp command, enclosed in a string, to send the robot agent
 	 */
 	protected void tellRobot( String command ) {
 		try {
-			sendMessage(ML.REQUEST, ML.EXECUTE, getServer()
+			
+			sendMessage( ML.REQUEST, ML.EXECUTE, getServer()
 					, ML.LANGUAGE, "Lisp"
 					, ML.CONTENT, command
 					);
+			
 			} catch (Throwable e) {
 			println("error", "WallMeasurer.tellRobot", e);
 			errors.add( "WallMeasurer.tellRobot: " + e );
@@ -337,7 +392,8 @@ public class WallMeasurer extends StateBasedController {
 	 * The controller examines the content of incoming inform-ref messages, and, upon notification
 	 * from one of the sensors of interest, it will trigger an event handler for that sensor update.
 	 */
-	/*public void update( Observable o, Object arg ) {
+	/* [Deprecated]
+	public void update( Observable o, Object arg ) {
         // Check that the event arg is a proper notification and not garbage
         if ( arg instanceof ObserverNotification ) {
          
@@ -487,18 +543,22 @@ public class WallMeasurer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
+						
 						System.out.println(getURL().getFile()+" enter state waiting thread started.");
 						
-						// Ensure robot is active and ready
+						// Ensure robot is active and ready in safe mode.
 						tellRobot( "(iRobot.mode 2)" );
 						
 					} catch (Throwable e) {
 						println("error", "WallMeasurer.enterState() [state=waiting]: Unexpected error in state thread", e);
 						errors.add( "WallMeasurer.enterState() [state=waiting]: " + e );
 					}
+				
 					System.out.println(getURL().getFile()+" enter state waiting thread ended.");
+
 				}
 			}).start();
+
 		}
 		
 		@Override
@@ -715,10 +775,7 @@ public class WallMeasurer extends StateBasedController {
 			}
 		}
 	};
-	
-	
-	
-	
+
 	/**
 	 * Victory state entered once the virtual wall has been fully measured.
 	 * The controller's command panel is updated with the results of the measurement;
@@ -729,7 +786,6 @@ public class WallMeasurer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			
 						isVictory = true;
 						
 						// Display results to controller's Command console
@@ -737,14 +793,12 @@ public class WallMeasurer extends StateBasedController {
 						
 						// Play victory song
 						tellRobot( "(iRobot.execute \"141 1\")" );
-						CASAUtil.sleepIgnoringInterrupts( 4000, null );
+						CASAUtil.sleepIgnoringInterrupts( 5000, null ); // Wait for song to finish
 						tellRobot( "(iRobot.execute \"141 2\")" );
-						
 						
 						// Power down
 						tellRobot( "(iRobot.mode 0)" );
 						
-					
 		}
 		
 		@Override
@@ -757,28 +811,47 @@ public class WallMeasurer extends StateBasedController {
 	
 
 
-	/* This gets called once the controller is notified of a bump or a wheel drop.
-	   This is an override of a method in the Controller class. */
-	
+	/** This gets called once the controller is notified of a bump or a wheel drop.
+	 * This is an override of a method in the Controller class. 
+	 * @param int, the updated BumpsAndWheelDrops reading
+	 */	
 	@Override
 	protected void onBumpsAndWheelDrops(int val) {
-		getCurrentState().handleEvent(Sensor.BumpsAndWheelDrops, (short)val);
+		getCurrentState().handleEvent( Sensor.BumpsAndWheelDrops, (short) val );
 	}
 	
-	/* This gets called once the controller receives notification of a change in the
+	/** This gets called once the controller receives notification of a change in the
 	 * value of wall sensor.
+	 * @param int, the updated Wall reading
 	 */
-	
 	protected void onWall(int val) {
-		getCurrentState().handleEvent(Sensor.Wall, (short)val);
+		getCurrentState().handleEvent( Sensor.Wall, (short) val );
 	}
 	
 	/**
 	 * This gets called once the controller is notified of an accumulated distance update.
-	 * @param val
+	 * Note that we make use of sensor Unused1 here, since distanceAcc is a software tally and not
+	 * an actual sensor on the robot.
+	 * @param val int, the updated accumulated distance
 	 */
 	protected void onDistanceAcc(int val) {
-		getCurrentState().handleEvent(Sensor.Unused1, (short)val);
+		getCurrentState().handleEvent( Sensor.Unused1, (short) val );
+	}
+	
+	/**
+	 * This gets called once the controller is notified of a VirtualWall sensor value update.
+	 * @param val int, the updated VirtualWall reading
+	 */
+	protected void onVirtualWall(int val) {
+		getCurrentState().handleEvent( Sensor.VirtualWall, (short) val );
+	}
+	
+	/**
+	 * This gets called once the controller is notified of a WallSignal sensor value update.
+	 * @param val int, the updated WallSignal reading
+	 */
+	protected void onWallSignal(int val) {
+		getCurrentState().handleEvent( Sensor.WallSignal, (short) val );
 	}
 	
 	protected void onWallSignal(int val) {
@@ -800,7 +873,8 @@ public class WallMeasurer extends StateBasedController {
 	 * @return long Measurement thus far of the wall the robot is currently traversing
 	 */
 	public long getMeasurement() {
-		return wallMeasurement / 10;
+		// Correct measurement by adding the diameter of the robot and the approximate distance we start away from the initial wall.
+		return (long) ( wallMeasurement + iRobotCommands.chassisDiameter + 20 ) / 10;
 	}
 
 }
