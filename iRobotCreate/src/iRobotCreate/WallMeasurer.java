@@ -14,6 +14,7 @@ import casa.ui.AbstractInternalFrame;
 import casa.util.CASAUtil;
 import casa.util.Trace;
 import casa.Status;
+import iRobotCreate.IRobotState;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.Environment;
 
@@ -168,11 +169,11 @@ public class WallMeasurer extends StateBasedController {
 	 * Print debug messages on state change, if in debug mode.
 	 */
 	@Override
-	public void setState(String stateName) {
-		super.setState( stateName );
+	public void setState(IRobotState s) {
+		super.setState( s );
 		
 		if ( debugMode )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + stateName + "\nWall measurement: " + getMeasurement() );
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement: " + getMeasurement() );
 			
 	}
 
@@ -465,13 +466,13 @@ public class WallMeasurer extends StateBasedController {
 						tellRobot( "(iRobot.execute \"140 3 4 57 32 57 32 57 32 53 64\")" );
 						
 						// Since my machine is slow, give it time to catch up...
-						CASAUtil.sleepIgnoringInterrupts( 10000, null );
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						
 						System.out.println(getURL().getFile()+" enter state start thread started.");
 						
 						// Command the robot to sing its startup song. Wait (approximately) for this message to go through, and the song to begin.
 						tellRobot( "(iRobot.execute \"141 1\")" );
-						CASAUtil.sleepIgnoringInterrupts( 10000, null );
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						
 						
 						// Fire a one-time TimeEvent scheduled for 10 minutes in the future
@@ -852,19 +853,6 @@ public class WallMeasurer extends StateBasedController {
 	 */
 	protected void onWallSignal(int val) {
 		getCurrentState().handleEvent( Sensor.WallSignal, (short) val );
-	}
-	
-	protected void onWallSignal(int val) {
-		getCurrentState().handleEvent(Sensor.WallSignal, (short)val);
-	}
-	
-	/**
-	 * This gets called when the controller is notified of an encounter with a virtual wall.
-	 * @param val
-	 */
-	
-	protected void onVirtualWall(int val) {
-		getCurrentState().handleEvent(Sensor.VirtualWall, (short)val);
 	}
 
 	/**
