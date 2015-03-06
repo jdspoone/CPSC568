@@ -177,7 +177,7 @@ public class WallMeasurer extends StateBasedController {
 		super.setState( s );
 		
 		if ( debugMode )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement: " + getMeasurement() );
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement: " + getMeasurement() + " cm");
 			
 	}
 
@@ -455,9 +455,15 @@ public class WallMeasurer extends StateBasedController {
 						
 						System.out.println(getURL().getFile()+" enter state start thread started.");
 						
+						// Turn power LED on.
+						tellRobot( "(iRobot.LED 127 255)" );
+						
 						// Command the robot to sing its startup song. Wait (approximately) for this message to go through, and the song to begin.
 						tellRobot( "(iRobot.execute \"141 1\")" );
 						CASAUtil.sleepIgnoringInterrupts( 5000, null );
+						
+						// Turn power LED off.
+						tellRobot( "(iRobot.LED 0 0)" );
 						
 						
 						// Fire a one-time TimeEvent scheduled for 10 minutes in the future
@@ -476,7 +482,12 @@ public class WallMeasurer extends StateBasedController {
 							 		// play a sad song on the robot; turn power LED red
 							 		if ( !isVictory ) {
 							 			
-										// Turn power LED red.
+							 			// Report status to user
+							 			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Task timed out." + "\nWall measurement: " + getMeasurement() + " cm");
+							 			
+										/* Turn power LED red. Note that this might be delayed a bit, since we don't flush the robot's command queue.
+										 * This is intended, though, as we want to allow the robot to continue its task.
+							 			*/
 										tellRobot( "(iRobot.LED 255 255)" );
 										
 										// Sing a pretty sad song.
@@ -839,8 +850,11 @@ public class WallMeasurer extends StateBasedController {
 	 * @return long Measurement thus far of the wall the robot is currently traversing
 	 */
 	public long getMeasurement() {
+		// If we haven't started measuring yet...
+		if ( wallMeasurement == 0 )
+			return 0;
 		// Correct measurement by adding the diameter of the robot and the approximate distance we start away from the initial wall.
-		return (long) ( wallMeasurement + iRobotCommands.chassisDiameter + 20 ) / 10;
+		return (long) ( wallMeasurement + iRobotCommands.chassisDiameter + 50 ) / 10;
 	}
 
 }
