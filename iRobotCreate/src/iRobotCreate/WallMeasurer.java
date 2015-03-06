@@ -302,26 +302,7 @@ public class WallMeasurer extends StateBasedController {
 								}
 								
 							};
-							
-			// Subscribe to alerts for Wall updates
-			@SuppressWarnings("unused")
-			SubscribeClientConversation convWall = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (Wall ?x))", null)
-							{
-
-								@Override
-								protected void update(URLDescriptor agentB, Term exp) {
-									if (exp==null)
-										return;
-									String intString = exp.toString();
-									int val = Integer.parseInt(intString);
-									onWall(val);
-								}
-								
-							};
-							
+														
 			// Subscribe to alerts for VirtualWall updates
 			@SuppressWarnings("unused")
 			SubscribeClientConversation convVirtualWall = new SubscribeClientConversation(
@@ -642,14 +623,15 @@ public class WallMeasurer extends StateBasedController {
 			
 			public void handleEvent(Sensor sensor, short shortness) {
 				switch(sensor) {
-				case Wall:
-					switch (shortness) {
-					case 0:
+				case WallSignal:
+					
+					if (shortness == 0) {
 						if (wallSeen) {
 							tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg "+rotateBack+"))");
 							setState(traversalState);
 						}
-					case 1:
+					}
+					else {
 						wallSeen = true;
 					}
 				default:
@@ -824,15 +806,7 @@ public class WallMeasurer extends StateBasedController {
 	protected void onBumpsAndWheelDrops(int val) {
 		getCurrentState().handleEvent( Sensor.BumpsAndWheelDrops, (short) val );
 	}
-	
-	/** This gets called once the controller receives notification of a change in the
-	 * value of wall sensor.
-	 * @param int, the updated Wall reading
-	 */
-	protected void onWall(int val) {
-		getCurrentState().handleEvent( Sensor.Wall, (short) val );
-	}
-	
+		
 	/**
 	 * This gets called once the controller is notified of an accumulated distance update.
 	 * Note that we make use of sensor Unused1 here, since distanceAcc is a software tally and not
