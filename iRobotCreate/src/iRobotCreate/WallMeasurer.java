@@ -34,6 +34,10 @@ import iRobotCreate.simulator.Environment;
  */
 public class WallMeasurer extends StateBasedController {
 	
+	// Movement speed variables
+	private final int moveSpeed = 50;
+	private final int turnSpeed = 20;
+
 	// Status variables:
 	private long wallMeasurement = 0; // length of wall measured (in mm)
 	public boolean isVictory = false; // whether or not virtual wall has been measured
@@ -579,7 +583,7 @@ public class WallMeasurer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			tellRobot("(progn () (irobot.drive 500))");
+			tellRobot("(progn () (irobot.drive " + moveSpeed + "))");
 		}
 		@Override
 		public void handleEvent(Sensor sensor, short shortness) {
@@ -608,7 +612,7 @@ public class WallMeasurer extends StateBasedController {
 					//this event is going to kick in again once the bump sensor starts reading 0.
 					
 					if (deg != 0) {
-						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50) (irobot.rotate-deg "+deg+") (irobot.drive 500))");
+						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50) (irobot.rotate-deg "+deg+") (irobot.drive " + moveSpeed + "))");
 					}
 					break;
 				default:
@@ -633,7 +637,7 @@ public class WallMeasurer extends StateBasedController {
 			
 			boolean wallSeen = false; // this may not be strictly necessary
 			public void enterState() {
-				tellRobot("(irobot.drive 15 1))"); //let's turn slowly in place
+				tellRobot("(irobot.drive " + turnSpeed + " 1))"); //let's turn slowly in place
 			}
 			
 			public void handleEvent(Sensor sensor, short shortness) {
@@ -683,7 +687,7 @@ public class WallMeasurer extends StateBasedController {
 			wallMeasurement = 0;
 
 			// We're not concerned with measuring the wall we are traversing, begin moving forward.
-			tellRobot( "(irobot.drive 30)" );
+			tellRobot( "(irobot.drive " + moveSpeed + ")" );
 		}
 				
 		public void handleEvent(Sensor sensor, short reading) {
@@ -708,7 +712,7 @@ public class WallMeasurer extends StateBasedController {
 						case 1:
 						case 2:
 							// This should never happen now...
-							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive 30))" );
+							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive " + moveSpeed + "))" );
 							break;
 							
 						// In the case that both of the sensors register, we're either done, or we back slightly and enter alignState
@@ -756,7 +760,7 @@ public class WallMeasurer extends StateBasedController {
 						if (signal > (initialWallSignal + allowedDeviation) || signal < (initialWallSignal - allowedDeviation)) {
 							int correctionFactor = signal > initialWallSignal ? correctionAngle : -correctionAngle;
 							tellRobot( "(irobot.rotate-deg " + correctionFactor + ")" );
-							tellRobot( "(irobot.drive 30)" );
+							tellRobot( "(irobot.drive " + moveSpeed + ")" );
 						}
 					}
 							
