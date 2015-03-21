@@ -1,0 +1,9 @@
+All the files concerning the second assignment are located in the RobotSoccer directory. The new java file is called RobotSoccer.java
+
+Setup
+- new java file
+- environnment setup (see what sarah did) (no lisp file)
+	- look at the ball parser
+	- make sure camera is working
+	- make sure we can move like before (use the previous agent)
+
