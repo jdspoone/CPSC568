@@ -16,3 +16,4 @@ iRobotCreate/bin/*
 iRobotCreate/lib/*
 
 .recommenders/*
+/bin/
