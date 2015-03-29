@@ -16,4 +16,13 @@ iRobotCreate/bin/*
 iRobotCreate/lib/*
 
 .recommenders/*
+
 /bin/
+
+Assignment2/iRobotCreate/.classpath
+
+Assignment2/iRobotCreate/.gitignore
+
+Assignment2/iRobotCreate/.project
+
+Assignment2/iRobotCreate/lib/
