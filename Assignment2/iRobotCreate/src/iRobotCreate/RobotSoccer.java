@@ -22,14 +22,8 @@ import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
 
 /**
- * WallMeasurer class, as a subtype of StateBasedController, is used as a controller for a wall-measuring iRobotCreate agent.
- * This controller implements the Command console commands (report), (reset), and (measure). (report) prints current state, measurement data, and any errors/warnings.
- * (reset) returns the robot to an idling state, awaiting commands. (measure) begins a measurement task, in which the robot measures the length (in cm) of some wall indicated
- * by a VirtualWall emitter. It does so by driving forward until bumping into a wall. If the robot does not bump the wall head-on, it resumes wandering until it does hit a wall head-on.
- * It then aligns itself parallel to the wall and traverses this and the following walls, turning corners. Wall measurements are continuous and reset on turning. Once the virtual wall is 
- * detected, and the measurement of this wall completed, the robot celebrates with a victory song.
- * The robot has an internal time limit of 10 minutes from startup for its measurement task; at this point it plays a sad tune, but may continue its measurement.
- *  
+ * Blah blah blah...
+ *   
  * @author Joel Nielsen
  *         Hugo Richard
  *         Jeffrey Spooner
@@ -38,48 +32,44 @@ import iRobotCreate.simulator.Environment;
 public class RobotSoccer extends StateBasedController {
 	
 	// Movement speed variables
-	private final int moveSpeed = 50;
-	private final int turnSpeed = 20;
 	private final static int cameraPort = 8995;
 	private final int robotPort = 9100;
 	
 	private String myColour = "purple";
 	private String ballColour = "red";
 	
-	public boolean debugMode = false;		// Display debug messages for state/measurements on Command console
+	public boolean debugMode = false;		// Display debug messages for state on Command console
 	
 	// Store errors encountered to display on "report" command
 	private java.util.LinkedList<String> errors = new java.util.LinkedList<String>();
 	
-	static {
-		  createCasaLispOperators( RobotSoccer.class );
-	  }
+	static { createCasaLispOperators( RobotSoccer.class ); }
+	
 	
 	/**
-	 * Command line lisp command to begin measurement task.
-	 * On executing this function, the robot enters its "wandering" state, proceeding toward the nearest wall. It will then traverse the walls until it
-	 * detects the virtual wall, and then measures that wall.
+	 * Lis accessible command to make the agent begin playing robot soccer.
+	 * 
+	 * NOTE - the name of this method should actually be start, but there appears to be a naming conflict here...
 	 * 
 	 * @return Status 0 if successful
 	 */
-	@LispAccessible( name = "measure", help = "Begin measurement task. Robot proceeds toward a wall and traverses all walls until it finds the virtual wall; it then measures this wall." )
-	public Status measure() {
+	@LispAccessible( name = "begin", help = "Begin playing soccer." )
+	public Status begin() {
 
-		// Reset wall measurement, victory conditions prior to new measurement
-		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
 		
 		// Enter first wall-finding state
-		setState( wanderingState );
+		setState( testState );
 		
 		// Success
 		return new Status( 0 );
 	}
 
+	
 	/**
-	 * Command line lisp command to report on the robot's progress.
-	 * Prints current state information ("waiting", "complete", "starting up", "in progress"), current wall measurements, and any errors thus far.
+	 * Lisp accessible comand to report the agent's state.
+	 * Prints current state information ("waiting", "complete", "starting up", "in progress"),  and any errors thus far.
 	 * 
 	 * @return Status 0 if successful
 	 */
@@ -100,9 +90,6 @@ public class RobotSoccer extends StateBasedController {
 
 		// Print state information to controller's command panel
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + state );
-
-		// Check current measurement results; print to command panel
-		
 		
 		// Report any errors encountered
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nErrors and warnings logged: " );
@@ -116,19 +103,16 @@ public class RobotSoccer extends StateBasedController {
 		return new Status( 0 );
 	}
 	
+	
 	/**
-	 * Command line lisp command to reset the robot's state.
-	 * Puts the robot in "waiting" state and resets all measurement variables.
-	 * To resume, execute (measure).
+	 * Lisp accesible command to reset the agent's state.
+	 * Puts the robot in "waiting" state and resets all relevant state variables.
 	 * 
 	 * @return Status 0 if successful
 	 */
-	@LispAccessible( name = "reset", help = "Reset all measurements. Robot enters waiting state, awaiting command-line instructions." )
+	@LispAccessible( name = "reset", help = "Reset all state. Robot enters waiting state, awaiting command-line instructions." )
 	public Status reset() {
 
-		// Reset wall measurement, victory conditions
-		
-		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
 		
@@ -139,13 +123,14 @@ public class RobotSoccer extends StateBasedController {
 		return new Status( 0 );
 	}
 	
+	
 	/**
 	 * Command line lisp command to set or unset debug mode.
-	 * In this state, state changes and measurements are printed to the Command console.
+	 * In this state, state changes are printed to the Command console.
 	 * 
 	 * @return Status 0 if successful
 	 */
-	@LispAccessible( name = "debug", help = "Toggle debug mode, which displays state changes and interim measurements in the Command console." )
+	@LispAccessible( name = "debug", help = "Toggle debug mode, which displays state changes in the Command console." )
 	public Status debug() {
 
 		if ( debugMode )
@@ -157,6 +142,7 @@ public class RobotSoccer extends StateBasedController {
 		return new Status( 0 );
 	}
 	
+	
 	/**
 	 * Print debug messages on state change, if in debug mode.
 	 */
@@ -165,10 +151,10 @@ public class RobotSoccer extends StateBasedController {
 		super.setState( s );
 		
 		if ( debugMode )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement:  cm");
-			
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Some debugging information...");
 	}
 
+	
 	/**
 	   * Start an {@link iRobotCreate} robot at 9100.<br>
 	   * Wait for it to be initialized.<br>
@@ -237,7 +223,7 @@ public class RobotSoccer extends StateBasedController {
 	
 	
 	/**
-	 * Initialize a new WallMeasurer controller. Register all possible states.
+	 * Initialize a new RobotSoccer controller. Register all possible states.
 	 * 
 	 * @param params The standard map of parameters to set up the robot.  This is a simple map of (String) keys to values. The
 	 * key "CONTROLS" is required and must specify the URL of an {@link iRobotCreate} agent to control.
@@ -256,7 +242,7 @@ public class RobotSoccer extends StateBasedController {
 			ballColour = (String)params.getJavaObject("BALL-COLOR");
 				
 
-		// Register all valid states for a WallMeasurer agent: a short description is provided here
+		// Register all valid states for a RobotSoccer agent: a short description is provided here
 		// A longer description is available where the states are implemented.
 		
 		//Starting state
@@ -265,25 +251,13 @@ public class RobotSoccer extends StateBasedController {
 		// State entered when the command wait is typed
 		registerState( waitingState );
 		
-		//testState exists solely to test out robot functionality until the start LispOperator
-		//is implemented effectively
+		//testState exists solely to test out robot functionality until the start LispOperator is implemented effectively
 		registerState( testState );
-		
-		// State entered after Starting state: The robot is exploring the map
-		// until its left and right sensor are activated at the same time
-		registerState( wanderingState ); 
-		
-		// State entered after Wandering or Traversal1: It tries to align the robot paralel to the wall
-		registerState( alignState );
-		
-		// State entered after align 1
-		// This state is responsible for making the robot go along the wall.
-		// It also takes care of the measurement of the wall
-		registerState( traversalState );
-		
-		// When the wall has been measured we are done, we enter the victory state
+				
+		// When the agent scores a goal, we enter the victory state
 		registerState( victoryState );
 	}
+	
 	
 	/**
 	 * Initialize the controller agent. Subscribe to the robot proxy for updates regarding
@@ -293,82 +267,11 @@ public class RobotSoccer extends StateBasedController {
 	@Override
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
-				
-		/*
-		 * Subscribe to the robot proxy.
-		 * This results in the appropriate handleEvent() case being triggered in the current controller state
-		 * whenever a sensor value is updated.
-		 * 
-		 * This method of subscribing to the robot proxy is heavily based on code by Rob Kremer; see iRobotCreate.Controller for his original code.
-		 */
-		try {
-			
-			// Subscribe to alerts for WallSignal updates
-			@SuppressWarnings("unused")
-			SubscribeClientConversation convWallSignal = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (WallSignal ?x))", null)
-							{
-				
-								@Override
-								protected void update(URLDescriptor agentB, Term term) {
-									if (term==null)
-										return;
-									String intString = term.toString();
-									int val = Integer.parseInt(intString);
-									onWallSignal( val );
-								}
-								
-							};
-														
-			// Subscribe to alerts for VirtualWall updates
-			@SuppressWarnings("unused")
-			SubscribeClientConversation convVirtualWall = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (VirtualWall ?x))", null)
-			{
-				
-				@Override
-				protected void update(URLDescriptor agentB, Term exp) {
-					if (exp==null)
-						return;
-					String intString = exp.toString();
-					int val = Integer.parseInt(intString);
-					onVirtualWall( val );
-				}
-				
-			};
-			
-			// Subscribe to alerts for distanceAcc updates
-			@SuppressWarnings("unused")
-			SubscribeClientConversation convDistanceAcc = new SubscribeClientConversation(
-					"--subscription-request", 
-					this, server, 
-					"(all ?x (distanceAcc ?x))", null)
-			{
-				
-				@Override
-				protected void update(URLDescriptor agentB, Term exp) {
-					if (exp==null)
-						return;
-					String intString = exp.toString();
-					int val = Integer.parseInt(intString);
-					onDistanceAcc( val );
-				}
-				
-			};
-							
-							
-		} catch (IllegalOperationException e) {
-			e.printStackTrace();
-		}
-		
-		// Start initializing the robot for its measurement task.
+						
+		// Start initializing the robot to play soccer.
 		setState( startState );
-		
 	}
+	
 	
 	/**
 	 * This embedded class implements the the notion of a position within the world
@@ -380,13 +283,12 @@ public class RobotSoccer extends StateBasedController {
 	 * @author Rob Kremer
 	 * 
 	 */
-	
 	class Position {
 		public int x, y, a;
 		Position(String parsable) throws NumberFormatException, IllegalArgumentException {
 			String content[] = parsable.split(",");
 			if (content.length!=4) 
-				throw new IllegalArgumentException("BallPusher.Position("+parsable+"): Expected a comma-separted list of length 4.");
+				throw new IllegalArgumentException("RobotSoccer.Position("+parsable+"): Expected a comma-separted list of length 4.");
 			x = Integer.parseInt(content[1]);
 			y = Integer.parseInt(content[2]);
 			a = Integer.parseInt(content[3]);
@@ -400,6 +302,7 @@ public class RobotSoccer extends StateBasedController {
 		}
 	}
 	
+	
 	/**
 	 * This method polls the Camera to get the x-coordinate, y-coordinate, and angle
 	 * of the desired shape of the desired color.
@@ -411,7 +314,6 @@ public class RobotSoccer extends StateBasedController {
 	 * @author Rob Kremer
 	 * @return - the position of the desired object
 	 */
-	
 	protected Position askCamera(String shape, String color) {
 		try {
 			MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
@@ -419,10 +321,11 @@ public class RobotSoccer extends StateBasedController {
 				return new Position((String)reply.getParameter(ML.CONTENT));
 			}
 		} catch (Throwable e) {
-			println("error", "BallPusher.askCamera", e);
+			println("error", "RobotSoccer.askCamera", e);
 		}
 		return null;
 	}
+	
 	
 	/**
 	 * Utility method which calls the askCamera method to find the position
@@ -430,10 +333,10 @@ public class RobotSoccer extends StateBasedController {
 	 * 
 	 * @return a Position object containing location and angle of puck.
 	 */
-	
 	protected Position getPuck() {
 		return askCamera("circle",ballColour);
 	}
+	
 	
 	/**
 	 * Utility method which calls the askCamera method to find the position
@@ -441,10 +344,10 @@ public class RobotSoccer extends StateBasedController {
 	 * 
 	 * @return a Position object containing location and angle of self.
 	 */
-	
 	protected Position getSelfPosition() {
 		return askCamera("triangle",myColour);
 	}
+	
 	
 	/**
 	 * Utility function for sending a command to the robot agent.
@@ -462,72 +365,21 @@ public class RobotSoccer extends StateBasedController {
 					);
 			
 			} catch (Throwable e) {
-			println("error", "WallMeasurer.tellRobot", e);
-			errors.add( "WallMeasurer.tellRobot: " + e );
+			println("error", "RobotSoccer.tellRobot", e);
+			errors.add( "RobotSoccer.tellRobot: " + e );
 		}
 	}
 	
-	/**
-	 * Modified update method to check for sensor readings.
-	 * Use this in case other forms of update (ie. SubscriptionClientConversation) are borked.
-	 * The controller examines the content of incoming inform-ref messages, and, upon notification
-	 * from one of the sensors of interest, it will trigger an event handler for that sensor update.
-	 */
-	/* [Deprecated]
-	public void update( Observable o, Object arg ) {
-        // Check that the event arg is a proper notification and not garbage
-        if ( arg instanceof ObserverNotification ) {
-         
-            ObserverNotification aNotification = ( ObserverNotification ) arg;
-             
-            // Check that the notification comes from the observed subject
-            if ( aNotification.getAgent() == this ) {
-             
-                // Check if we were notified of a message being received by the subject
-                if ( aNotification.getType().equals( ML.EVENT_MESSAGE_RECEIVED ) ) {
-                     
-                    MLMessage message = ( MLMessage ) aNotification.getObject();
-                    
-                    try {
-                    	// Only bother with messages that might be sensor updates
-						if ( message.getParameter( ML.PERFORMATIVE ) == ML.INFORM_REF ) {
-							System.out.println("Message: " + message.getContent() );
-							
-							// WallSignal update
-							if ( message.getParameter( ML.CONTENT ).startsWith( "((WallSignal" ) )
-								getCurrentState().handleEvent( iRobotCommands.Sensor.WallSignal, (short) Integer.parseInt( message.getParameter( ML.CONTENT ).substring( 13, message.getParameter( ML.CONTENT ).length() - 2 ) ) );
-							
-							// Angle update
-							else if ( message.getParameter( ML.CONTENT ).startsWith( "((Angle " ) )
-								getCurrentState().handleEvent( iRobotCommands.Sensor.Angle, (short) Integer.parseInt( message.getParameter( ML.CONTENT ).substring( 8, message.getParameter( ML.CONTENT ).length() - 2 ) ) );
-							
-							else if ( message.getParameter( ML.CONTENT ).startsWith( "((VirtualWall " ) ) {
-								// Debugging: display state
-								( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VirtualWall: " + message.getContent() );
-								getCurrentState().handleEvent( iRobotCommands.Sensor.Angle, (short) Integer.parseInt( message.getParameter( ML.CONTENT ).substring( 14, message.getParameter( ML.CONTENT ).length() - 2 ) ) );
-								
-							}
-						}
-					} catch (ClassNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (ParseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                }
-            }
-        }
-    }*/
 	
 	//************ STATES ***************************
 	//***********************************************
 
+	
 	/**
 	 * Initialize the robot proxy: Load songs and play a short song to indicate the robot is online; 
-	 * reset state variables as necessary; and fire a time-out message scheduled for ten minutes in the future.
+	 * reset state variables as necessary.
 	 * 
-	 * After startup, the robot should be in "waiting" state, awaiting commands from the WallMeasurer's Command console.
+	 * After startup, the robot should be in "waiting" state, awaiting commands from the SoccerRobot's Command console.
 	 */
 	IRobotState startState = new IRobotState( "start" ) {
 	
@@ -540,8 +392,7 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
-
-						// Load short songs for startup, victory, and time-out.
+						// Load short songs for startup, victory.
 						// Credits to http://air.imag.fr/images/1/1b/ImperialMarch.pde.txt
 						tellRobot( "(iRobot.execute \"140 1 9 69 32 69 32 69 32 65 22 72 10 69 32 65 22 72 10 69 64\")" );
 						tellRobot( "(iRobot.execute \"140 2 9 76 32 76 32 76 32 77 22 68 10 69 32 65 22 72 10 69 64\")" );
@@ -561,50 +412,10 @@ public class RobotSoccer extends StateBasedController {
 						
 						// Turn power LED off.
 						tellRobot( "(iRobot.LED 0 0)" );
-						
-						
-						// Fire a one-time TimeEvent scheduled for 10 minutes in the future
-						try {
-							
-							TimeEvent timeout = new TimeEvent( "event", getAgent(), System.currentTimeMillis() + 10 * 60 * 1000 ) {
-
-								/**
-								 * When timeout occurs, indicate this by turning the power LED red and playing a pathetic song.
-								 */
-								@Override
-								public void fireEvent() {
-							 		super.fireEvent();
-							 		
-							 		// When (if) timeout occurs, and the robot has not yet succeeded in measuring the virtual wall,
-							 		// play a sad song on the robot; turn power LED red
-							 		
-							 			
-							 			// Report status to user
-							 			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Task timed out." + "\nWall measurement: cm");
-							 			
-										/* Turn power LED red. Note that this might be delayed a bit, since we don't flush the robot's command queue.
-										 * This is intended, though, as we want to allow the robot to continue its task.
-							 			*/
-										tellRobot( "(iRobot.LED 255 255)" );
-										
-										// Sing a pretty sad song.
-										tellRobot( "(iRobot.execute \"141 3\")" );
-										
-							 		
-							 	}
-							
-							};
-						
-							timeout.start();
-							
-						} catch ( Throwable e ) {
-							println("error", "WallMeasurer.enterState() [state=start]: Unexpected error in state thread", e);
-							errors.add( "WallMeasurer.enterState() [state=start]: " + e );
-						}
-						
+												
 					} catch (Throwable e) {
-						println("error", "WallMeasurer.enterState() [state=start]: Unexpected error in state thread", e);
-						errors.add( "WallMeasurer.enterState() [state=start]: " + e );
+						println("error", "RobotSoccer.enterState() [state=start]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=start]: " + e );
 					}
 
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
@@ -625,10 +436,10 @@ public class RobotSoccer extends StateBasedController {
 		
 	};
 	
+	
 	//testState exists solely to test out robot functionality until the start LispOperator
 	//is implemented effectively. Don't hesitate to delete this little playground once it's served
 	//its purpose.
-	
 	IRobotState testState = new IRobotState ("test") {
 		@Override
 		public void enterState() {
@@ -649,7 +460,7 @@ public class RobotSoccer extends StateBasedController {
 	};
 	
 	/**
-	 * Idle state. Wait for command to begin measurement.
+	 * Idle state. Wait for command to begin playing soccer.
 	 */
 	IRobotState waitingState = new IRobotState( "waiting" ) {
 		
@@ -667,8 +478,8 @@ public class RobotSoccer extends StateBasedController {
 						tellRobot( "(iRobot.mode 2)" );
 						
 					} catch (Throwable e) {
-						println("error", "WallMeasurer.enterState() [state=waiting]: Unexpected error in state thread", e);
-						errors.add( "WallMeasurer.enterState() [state=waiting]: " + e );
+						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
 					}
 				
 					System.out.println(getURL().getFile()+" enter state waiting thread ended.");
@@ -683,210 +494,11 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 	};
-	
-	/*
-	 * This state is what sends the robot faffing about whatever space it's been put into.
-	 * Left and right bumps by themselves make the robot back up a bit and adjust its angle
-	 * to go elsewhere. Once we arrive at a wall head on enough to activate both the left
-	 * and right bumpers, the robot backs up a bit and goes into the first alignment state.
-	 */
-	
-	IRobotState wanderingState = new IRobotState("wanderingState") {
-		@Override
-		public void enterState() {
 			
-			tellRobot("(progn () (irobot.drive " + moveSpeed + "))");
-		}
-		@Override
-		public void handleEvent(Sensor sensor, short shortness) {
-			switch (sensor) {
-				case BumpsAndWheelDrops:
-					int deg = 0;
-					switch (shortness & 3) {
-						case 0: //no bumps
-							deg = 0;
-							break;
-						case 1: //right bump
-							deg = 30;
-							break;
-						case 2: //left bump
-							deg = -75;
-							break;
-						case 3: //both bumps
-							
-					}
-					
-					//if we have a degree to adjust by that's greater than 0, let's go ahead
-					//and adjust the robot and keep going. The check is necessary otherwise
-					//this event is going to kick in again once the bump sensor starts reading 0.
-					
-					if (deg != 0) {
-						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50) (irobot.rotate-deg "+deg+") (irobot.drive " + moveSpeed + "))");
-					}
-					break;
-				default:
-				    break;
-				}
-			}
-		};
-		
-		/* This state aligns the robot to be parallel with the wall (hopefully!) after the robot
-		 * makes contact with the wall relatively head on. The basic concept is that it rotates in place
-		 * until the binary wall sensor switches to 0. After that, it rotates back a set angle
-		 * to align itself.
-		 * 
-		 * The major snag with this method is that due to the queuing delays inherit in passing messages
-		 * between the controller and the robot agent, there's no guarantee of the robot stopping in a 
-		 * consistent position. Having the robot turn as slowly as possible mitigates this somewhat. 
-		 */
-		
-		private final int rotateBack = -27; //degrees to rotate back
-		IRobotState alignState = new IRobotState("alignState") {
-			
-			
-			boolean wallSeen = false; // this may not be strictly necessary
-			public void enterState() {
-				tellRobot("(irobot.drive " + turnSpeed + " 1))"); //let's turn slowly in place
-			}
-			
-			public void handleEvent(Sensor sensor, short shortness) {
-				switch(sensor) {
-				case WallSignal:
-					
-					if (shortness == 0) {
-						if (wallSeen) {
-							tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg "+rotateBack+"))");
-							setState(traversalState);
-						}
-					}
-					else {
-						wallSeen = true;
-					}
-				default:
-					break;
-				}
-			}
-		};
-			
-	/* Traversal state
-	*  This state makes the robot goes along the wall
-	*  
-	*  The robot is always measuring, it reset its measurement when it hits a corner.
-	*  
-	*  If the robot deviates to much, we adjust its trajectory. This is done by
-	*  using the wall signal sensor.
-	*  
-	*  If the robot hits the wall signal two situations can occur:
-	*  	- The wall is the first the robot has seen so it has not done the 
-	*  		measurement since the beginning of the wall -> We ignore the wall signal
-	*  	- The wall is not the first one, it has measured the beginning of the wall already
-	*  		the next time it hits a corner, it has measured the entire wall -> we are done.
-	*/
-		
-	IRobotState traversalState = new IRobotState("traversalState") {
-			
-		private final int allowedDeviation = 25;
-		private final int correctionAngle = 3;
-			
-		private int initialWallSignal;
-		private int initialWallDistanceAcc = 0;
-			
-		public void enterState() {
-			initialWallDistanceAcc = 0;
-			initialWallSignal = 0;
-			
-
-			// We're not concerned with measuring the wall we are traversing, begin moving forward.
-			tellRobot( "(irobot.drive " + moveSpeed + ")" );
-		}
-				
-		public void handleEvent(Sensor sensor, short reading) {
-					
-			switch (sensor) {
-
-				// At the moment, let's treat overcurrent and bumps/wheeldrops the same way
-				case Overcurrents:
-							
-					// We want to ignore sensor readings of zero 
-					if (reading == 0)
-						break;
-							
-				case BumpsAndWheelDrops:
-						
-					switch (reading & 3) {
-						// In the case that we get a sensor reading of zero, do nothing
-						case 0:
-							break;
-						
-						// In the case that only 1 of the 2 bump sensors register, readjust
-						case 1:
-						case 2:
-							// This should never happen now...
-							tellRobot( "(progn () (irobot.drive 0 :flush T) (irobot.moveby -20) (irobot.rotate-deg 7) (irobot.drive " + moveSpeed + "))" );
-							break;
-							
-						// In the case that both of the sensors register, we're either done, or we back slightly and enter alignState
-						case 3: 
-							// If this is not the first wall we hit (ie. we have completed a full measurement of this wall)
-							// and this wall is marked by the virtual wall signal, congratulations! Measurement task is complete.
-							
-							break;
-						default:
-							break;
-					}
-												
-				case Unused1: // DistanceAcc update
-					
-					// Update length of wall we're currently traversing
-					if ( initialWallDistanceAcc == 0 )
-						initialWallDistanceAcc = (int) reading;
-					else
-						
-					break;
-													
-				case WallSignal:
-												
-					// If we haven't set our initial wall signal
-					int signal = (int)reading;
-					if (initialWallSignal == 0) {
-								
-						// And the current reading is greater than 0
-						if (signal > 0) {
-							initialWallSignal = signal;
-						}
-					}
-							
-					// Otherwise, ensure we are not deviating from that inital wall reading too much
-					else {
-								
-						// If the given reading is outside of the allowed deviation, adjust course
-						if (signal > (initialWallSignal + allowedDeviation) || signal < (initialWallSignal - allowedDeviation)) {
-							int correctionFactor = signal > initialWallSignal ? correctionAngle : -correctionAngle;
-							tellRobot( "(irobot.rotate-deg " + correctionFactor + ")" );
-							tellRobot( "(irobot.drive " + moveSpeed + ")" );
-						}
-					}
-							
-					break;
-						
-				case VirtualWall:
-					
-					
-					// Debugging: display state
-					( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VirtualWall: " + reading );
-					
-					
-					
-				default:
-					break;
-			}
-		}
-	};
 
 	/**
-	 * Victory state entered once the virtual wall has been fully measured.
-	 * The controller's command panel is updated with the results of the measurement;
-	 * the robot plays a jubilant song; and the robot powers down.
+	 * Victory state entered once the agent has scored a goal.
+	 * The robot plays a jubilant song; and the robot powers down.
 	 */
 	IRobotState victoryState = new IRobotState( "victory" ) {
 		
@@ -896,7 +508,7 @@ public class RobotSoccer extends StateBasedController {
 						
 						
 						// Display results to controller's Command console
-						( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!!\nWall Measured: cm" );
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!" );
 						
 						// Play victory song
 						tellRobot( "(iRobot.execute \"141 1\")" );
@@ -913,50 +525,4 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 	};
-	
-
-	
-
-
-	/** This gets called once the controller is notified of a bump or a wheel drop.
-	 * This is an override of a method in the Controller class. 
-	 * @param int, the updated BumpsAndWheelDrops reading
-	 */	
-	@Override
-	protected void onBumpsAndWheelDrops(int val) {
-		getCurrentState().handleEvent( Sensor.BumpsAndWheelDrops, (short) val );
-	}
-		
-	/**
-	 * This gets called once the controller is notified of an accumulated distance update.
-	 * Note that we make use of sensor Unused1 here, since distanceAcc is a software tally and not
-	 * an actual sensor on the robot.
-	 * @param val int, the updated accumulated distance
-	 */
-	protected void onDistanceAcc(int val) {
-		getCurrentState().handleEvent( Sensor.Unused1, (short) val );
-	}
-	
-	/**
-	 * This gets called once the controller is notified of a VirtualWall sensor value update.
-	 * @param val int, the updated VirtualWall reading
-	 */
-	protected void onVirtualWall(int val) {
-		getCurrentState().handleEvent( Sensor.VirtualWall, (short) val );
-	}
-	
-	/**
-	 * This gets called once the controller is notified of a WallSignal sensor value update.
-	 * @param val int, the updated WallSignal reading
-	 */
-	protected void onWallSignal(int val) {
-		getCurrentState().handleEvent( Sensor.WallSignal, (short) val );
-	}
-
-	/**
-	 * Return the current measurement value, in cm, for the current wall.
-	 * 
-	 * @return long Measurement thus far of the wall the robot is currently traversing
-	 */
-
 }
