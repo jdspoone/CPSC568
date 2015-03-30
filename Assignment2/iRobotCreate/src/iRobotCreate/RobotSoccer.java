@@ -1,10 +1,11 @@
 package iRobotCreate;
 
 
-import jade.semantics.lang.sl.grammar.Term;
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
+import casa.TransientAgent;
+import casa.abcl.CasaLispOperator;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
@@ -31,12 +32,22 @@ import iRobotCreate.simulator.Environment;
  */
 public class RobotSoccer extends StateBasedController {
 	
+	// Boolean for start or stop state
+	private boolean isStarted = false;
+	
 	// Port numbers 
 	private final static int cameraPort = 8995;
 	private final int robotPort = 9100;
 	
+	// Variables for game parameters: the colours of this robot, its partners, and its opponents, and the colour of the ball. 
 	private String myColour = "purple";
+	private String partnerColour;
+	private String opponent1Colour;
+	private String opponent2Colour;
 	private String ballColour = "red";
+	
+	// Variable for this robot's target goal. True: y=0, false: y=700.
+	private Boolean whichGoal;
 	
 	// Variables tracking goals scored
 	private int playerGoals = 0;
@@ -51,12 +62,60 @@ public class RobotSoccer extends StateBasedController {
 	
 	
 	/**
-	 * Lis accessible command to make the agent begin playing robot soccer.
+	 * Lisp accessible command to make the agent begin playing robot soccer.
+	 * Once this command has been given once with all parameters, it may be repeated with no parameters to re-use the last settings.
+	 * This command is mapped onto pushing the "play" button on the robot.
 	 * 
 	 * NOTE - the name of this method should actually be start, but there appears to be a naming conflict here...
 	 * 
 	 * @return Status 0 if successful
 	 */
+	@SuppressWarnings("unused")
+	private static final CasaLispOperator ROBOTSOCCER_START =
+		new casa.abcl.CasaLispOperator("start", "\"!Begin playing soccer by attempting to move the ball into the opposing goal.\" "
+				+"&KEY MY \"@java.lang.String\" \"!This robot's color.\" "
+				+"PARTNER \"@java.lang.String\" \"!This robot's partner's color.\" "
+				+"OP1 \"@java.lang.String\" \"!Opponent 1's color.\" "
+				+"OP2 \"@java.lang.String\" \"!Opponent 2's color.\" "
+				+"GOALZERO \"@java.lang.Boolean\" \"!Which goal to score on (NIL=y=700, other=y=0).\" "
+				, iRobotCreate.class, iRobotCreate.class)
+	{
+		@Override
+		public Status execute(TransientAgent agent, ParamsMap params, AgentUI ui, org.armedbear.lisp.Environment lispEnv) {
+			if ( params.containsKey( "MY" ) )
+				( ( RobotSoccer ) agent ).myColour = (String) params.getJavaObject( "MY" );
+
+			if ( params.containsKey( "PARTNER" ) )
+				( ( RobotSoccer ) agent ).partnerColour = (String) params.getJavaObject( "PARTNER" );
+			
+			if ( params.containsKey( "OP1" ) )
+				( ( RobotSoccer ) agent ).opponent1Colour = (String) params.getJavaObject( "OP1" );
+			
+			if ( params.containsKey( "OP2" ) )
+				( ( RobotSoccer ) agent ).opponent2Colour = (String) params.getJavaObject( "OP2" );
+			
+			if ( params.containsKey( "GOALZERO" ) ) 
+				( ( RobotSoccer ) agent ).whichGoal = (Boolean) params.getJavaObject( "GOALZERO" );
+			
+			// All parameters must be set at least once, and then they are saved for future runs. If some are not initialized, starting a game fails.
+			if ( ( ( RobotSoccer ) agent ).myColour == null
+					|| ( ( RobotSoccer ) agent ).partnerColour == null
+					|| ( ( RobotSoccer ) agent ).opponent1Colour == null
+					|| ( ( RobotSoccer ) agent ).opponent2Colour == null
+					|| ( ( RobotSoccer ) agent ).whichGoal == null ) {
+						( (AbstractInternalFrame) ( ( RobotSoccer ) agent ).getUI() ).getCommandPanel().print( "Start failed: parameter(s) uninitialized." );
+						return new Status(0);
+			}
+			
+			// Initialized parameters successfully. Begin playing a game of soccer.
+			( ( RobotSoccer ) agent ).isStarted = true;
+			( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).testState );
+			
+			return new Status(0);
+		}
+	};
+	/**
+	 * 
 	@LispAccessible( name = "begin", help = "Begin playing soccer." )
 	public Status begin() {
 
@@ -69,6 +128,8 @@ public class RobotSoccer extends StateBasedController {
 		// Success
 		return new Status( 0 );
 	}
+	**/
+	
 
 	
 	/**
@@ -444,8 +505,11 @@ public class RobotSoccer extends StateBasedController {
 			
 			Position puckPosition = getPuck();
 			Position selfPosition = getSelfPosition();
-			System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
-			System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
+			
+			CASAUtil.sleepIgnoringInterrupts( 5000, null );
+			
+			//System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
+			//System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
 		}
 		
 		@Override
