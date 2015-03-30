@@ -31,12 +31,16 @@ import iRobotCreate.simulator.Environment;
  */
 public class RobotSoccer extends StateBasedController {
 	
-	// Movement speed variables
+	// Port numbers 
 	private final static int cameraPort = 8995;
 	private final int robotPort = 9100;
 	
 	private String myColour = "purple";
 	private String ballColour = "red";
+	
+	// Variables tracking goals scored
+	private int playerGoals = 0;
+	private int opponentGoals = 0;
 	
 	public boolean debugMode = false;		// Display debug messages for state on Command console
 	
@@ -68,28 +72,19 @@ public class RobotSoccer extends StateBasedController {
 
 	
 	/**
-	 * Lisp accessible comand to report the agent's state.
-	 * Prints current state information ("waiting", "complete", "starting up", "in progress"),  and any errors thus far.
+	 * Lisp accessible command to report the agent's state.
+	 * Prints current state information, current score, and any errors thus far.
 	 * 
 	 * @return Status 0 if successful
 	 */
 	@LispAccessible( name = "report", help = "Prints state information and robot's current state on the controller's command tab." )
 	public Status report() {
 
-		String state = "";
-
-		// Check current state
-		if ( getCurrentState().equals( waitingState ) )
-			state = "waiting";
-		else if ( getCurrentState().equals( victoryState ) )
-			state = "complete";
-		else if ( getCurrentState().equals( startState ) )
-			state = "starting up";
-		else
-			state = "in progress"; // in some search state
-
 		// Print state information to controller's command panel
-		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + state );
+		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + this.getState().name() );
+		
+		// Print available results
+		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current score:\n   Player Goals: " + playerGoals + "\n   Opponent Goals: " + opponentGoals );
 		
 		// Report any errors encountered
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nErrors and warnings logged: " );
