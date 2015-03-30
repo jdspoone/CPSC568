@@ -39,11 +39,7 @@ public class RobotSoccer extends StateBasedController {
 	private final int moveSpeed = 50;
 	private final int turnSpeed = 20;
 
-	// Status variables:
-	private long wallMeasurement = 0; // length of wall measured (in mm)
-	public boolean isVictory = false; // whether or not virtual wall has been measured
-	public boolean foundVirtualWall = false; // whether or not the current wall is the virtual wall
-	public boolean isFirstWall = true; // whether or not the current wall is the first wall; as we may start our traversal at pretty much any point along this wall, our measurement data is garbage. Ignore it.
+	
 	
 	public boolean debugMode = false;		// Display debug messages for state/measurements on Command console
 	
@@ -65,10 +61,6 @@ public class RobotSoccer extends StateBasedController {
 	public Status measure() {
 
 		// Reset wall measurement, victory conditions prior to new measurement
-		wallMeasurement = 0;
-		isVictory = false;
-		foundVirtualWall = false;
-		isFirstWall = true;
 		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
@@ -105,14 +97,7 @@ public class RobotSoccer extends StateBasedController {
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + state );
 
 		// Check current measurement results; print to command panel
-		if ( isVictory )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nWall measurement: " + getMeasurement() + " cm \nStatus: complete");
-		else if ( wallMeasurement > 0 && foundVirtualWall )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nWall measurement: " + getMeasurement() + " cm \nStatus: in progress; virtual wall known" );
-		else if ( wallMeasurement > 0 )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nWall measurement: " + getMeasurement() + " cm \nStatus: in progress; virtual wall unknown" );
-		else
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nWall measurement: unknown" );
+		
 		
 		// Report any errors encountered
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "\nErrors and warnings logged: " );
@@ -137,10 +122,7 @@ public class RobotSoccer extends StateBasedController {
 	public Status reset() {
 
 		// Reset wall measurement, victory conditions
-		wallMeasurement = 0;
-		isVictory = false;
-		foundVirtualWall = false;
-		isFirstWall = true;
+		
 		
 		// Flush current command queue
 		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
@@ -178,7 +160,7 @@ public class RobotSoccer extends StateBasedController {
 		super.setState( s );
 		
 		if ( debugMode )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement: " + getMeasurement() + " cm");
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "State change: " + s.getName() + "\nWall measurement:  cm");
 			
 	}
 
@@ -501,10 +483,10 @@ public class RobotSoccer extends StateBasedController {
 							 		
 							 		// When (if) timeout occurs, and the robot has not yet succeeded in measuring the virtual wall,
 							 		// play a sad song on the robot; turn power LED red
-							 		if ( !isVictory ) {
+							 		
 							 			
 							 			// Report status to user
-							 			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Task timed out." + "\nWall measurement: " + getMeasurement() + " cm");
+							 			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Task timed out." + "\nWall measurement: cm");
 							 			
 										/* Turn power LED red. Note that this might be delayed a bit, since we don't flush the robot's command queue.
 										 * This is intended, though, as we want to allow the robot to continue its task.
@@ -514,7 +496,7 @@ public class RobotSoccer extends StateBasedController {
 										// Sing a pretty sad song.
 										tellRobot( "(iRobot.execute \"141 3\")" );
 										
-							 		}
+							 		
 							 	}
 							
 							};
@@ -614,10 +596,7 @@ public class RobotSoccer extends StateBasedController {
 							deg = -75;
 							break;
 						case 3: //both bumps
-							isFirstWall = true; // Align to traverse this new wall. Since it is the first wall, we might be anywhere along its length, so measurement will be incomplete.
-												// Set this variable so we don't send off any incomplete reports or victory flags.
-							tellRobot("(progn () (irobot.drive 0) (irobot.moveby -20))");
-							setState(alignState);
+							
 					}
 					
 					//if we have a degree to adjust by that's greater than 0, let's go ahead
@@ -698,7 +677,7 @@ public class RobotSoccer extends StateBasedController {
 		public void enterState() {
 			initialWallDistanceAcc = 0;
 			initialWallSignal = 0;
-			wallMeasurement = 0;
+			
 
 			// We're not concerned with measuring the wall we are traversing, begin moving forward.
 			tellRobot( "(irobot.drive " + moveSpeed + ")" );
@@ -733,14 +712,7 @@ public class RobotSoccer extends StateBasedController {
 						case 3: 
 							// If this is not the first wall we hit (ie. we have completed a full measurement of this wall)
 							// and this wall is marked by the virtual wall signal, congratulations! Measurement task is complete.
-							if ( !isFirstWall && foundVirtualWall ) {
-								setState( victoryState );
-							} else {
-								// Otherwise, turn the corner; align to the new wall
-								isFirstWall = false; // We can traverse this new wall fully, corner to corner
-								tellRobot("(irobot.moveby -20)");
-								setState(alignState);
-							}
+							
 							break;
 						default:
 							break;
@@ -752,7 +724,7 @@ public class RobotSoccer extends StateBasedController {
 					if ( initialWallDistanceAcc == 0 )
 						initialWallDistanceAcc = (int) reading;
 					else
-						wallMeasurement = (int) reading - initialWallDistanceAcc;
+						
 					break;
 													
 				case WallSignal:
@@ -786,7 +758,6 @@ public class RobotSoccer extends StateBasedController {
 					// Debugging: display state
 					( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VirtualWall: " + reading );
 					
-					foundVirtualWall = true;
 					
 					
 				default:
@@ -805,10 +776,10 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-						isVictory = true;
+						
 						
 						// Display results to controller's Command console
-						( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!!\nWall Measured: " + getMeasurement() + " cm" );
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!!\nWall Measured: cm" );
 						
 						// Play victory song
 						tellRobot( "(iRobot.execute \"141 1\")" );
@@ -870,12 +841,5 @@ public class RobotSoccer extends StateBasedController {
 	 * 
 	 * @return long Measurement thus far of the wall the robot is currently traversing
 	 */
-	public long getMeasurement() {
-		// If we haven't started measuring yet...
-		if ( wallMeasurement == 0 )
-			return 0;
-		// Correct measurement by adding the diameter of the robot and the approximate distance we start away from the initial wall.
-		return (long) ( wallMeasurement + iRobotCommands.chassisDiameter + 50 ) / 10;
-	}
 
 }
