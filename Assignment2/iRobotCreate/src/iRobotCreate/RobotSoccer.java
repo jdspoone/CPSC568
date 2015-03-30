@@ -82,6 +82,11 @@ public class RobotSoccer extends StateBasedController {
 	{
 		@Override
 		public Status execute(TransientAgent agent, ParamsMap params, AgentUI ui, org.armedbear.lisp.Environment lispEnv) {
+			
+			// Flush current command queue
+			( ( RobotSoccer ) agent ).tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
+
+			
 			if ( params.containsKey( "MY" ) )
 				( ( RobotSoccer ) agent ).myColour = (String) params.getJavaObject( "MY" );
 
@@ -114,23 +119,6 @@ public class RobotSoccer extends StateBasedController {
 			return new Status(0);
 		}
 	};
-	/**
-	 * 
-	@LispAccessible( name = "begin", help = "Begin playing soccer." )
-	public Status begin() {
-
-		// Flush current command queue
-		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
-		
-		// Enter first wall-finding state
-		setState( testState );
-		
-		// Success
-		return new Status( 0 );
-	}
-	**/
-	
-
 	
 	/**
 	 * Lisp accessible command to report the agent's state.
@@ -142,7 +130,7 @@ public class RobotSoccer extends StateBasedController {
 	public Status report() {
 
 		// Print state information to controller's command panel
-		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + this.getState().name() );
+		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current state: " + getCurrentState().getName() );
 		
 		// Print available results
 		( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Current score:\n   Player Goals: " + playerGoals + "\n   Opponent Goals: " + opponentGoals );
@@ -161,24 +149,36 @@ public class RobotSoccer extends StateBasedController {
 	
 	
 	/**
-	 * Lisp accesible command to reset the agent's state.
+	 * Lisp accessible command to reset the agent's state.
 	 * Puts the robot in "waiting" state and resets all relevant state variables.
+	 * This command is mapped to pushing "play" on the robot.
 	 * 
 	 * @return Status 0 if successful
 	 */
-	@LispAccessible( name = "reset", help = "Reset all state. Robot enters waiting state, awaiting command-line instructions." )
-	public Status reset() {
-
-		// Flush current command queue
-		tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
-		
-		// Enter waiting state
-		setState( waitingState );
-		
-		// Success
-		return new Status( 0 );
-	}
-	
+	@SuppressWarnings("unused")
+	private static final CasaLispOperator ROBOTSOCCER_STOP =
+		new casa.abcl.CasaLispOperator("stop", "\"!Reset the robot, clear results, and go into waiting state.\" "
+				, iRobotCreate.class, iRobotCreate.class)
+	{
+		@Override
+		public Status execute(TransientAgent agent, ParamsMap params, AgentUI ui, org.armedbear.lisp.Environment lispEnv) {
+			
+			// Flush current command queue
+			( ( RobotSoccer ) agent ).tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
+						
+			// Clear results
+			( ( RobotSoccer ) agent ).playerGoals = 0;
+			( ( RobotSoccer ) agent ).opponentGoals = 0;
+			
+			// Reset successfully
+			( ( RobotSoccer ) agent ).isStarted = false;
+			
+			// Enter waiting state
+			( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).waitingState );
+			
+			return new Status(0);
+		}
+	};
 	
 	/**
 	 * Command line lisp command to set or unset debug mode.
@@ -207,7 +207,7 @@ public class RobotSoccer extends StateBasedController {
 		super.setState( s );
 		
 		if ( debugMode )
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "Some debugging information...");
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( s.getName() );
 	}
 
 	
