@@ -40,7 +40,7 @@ public class RobotSoccer extends StateBasedController {
 	// Movement speed variables
 	private final int moveSpeed = 50;
 	private final int turnSpeed = 20;
-	private final int cameraPort = 8995;
+	private final static int cameraPort = 8995;
 	private final int robotPort = 9100;
 	
 	private String myColour = "purple";
@@ -209,7 +209,7 @@ public class RobotSoccer extends StateBasedController {
 	  			try {
 	  				@SuppressWarnings("unused")
 					CameraSimulation cam = (CameraSimulation) CASAUtil.startAnAgent(
-	  						CameraSimulation.class, "camera" ,8995,null,
+	  						CameraSimulation.class, "camera" ,cameraPort,null,
 	  						"LAC","9000",
 	  						"PROCESS","CURRENT",
 	  						"TRACE","trace-code",
@@ -263,7 +263,11 @@ public class RobotSoccer extends StateBasedController {
 		registerState( startState );
 		
 		// State entered when the command wait is typed
-		registerState( waitingState ); 
+		registerState( waitingState );
+		
+		//testState exists solely to test out robot functionality until the start LispOperator
+		//is implemented effectively
+		registerState( testState );
 		
 		// State entered after Starting state: The robot is exploring the map
 		// until its left and right sensor are activated at the same time
@@ -420,9 +424,23 @@ public class RobotSoccer extends StateBasedController {
 		return null;
 	}
 	
+	/**
+	 * Utility method which calls the askCamera method to find the position
+	 * of the puck directly.
+	 * 
+	 * @return a Position object containing location and angle of puck.
+	 */
+	
 	protected Position getPuck() {
 		return askCamera("circle",ballColour);
 	}
+	
+	/**
+	 * Utility method which calls the askCamera method to find the position
+	 * of the robot directly.
+	 * 
+	 * @return a Position object containing location and angle of self.
+	 */
 	
 	protected Position getSelfPosition() {
 		return askCamera("triangle",myColour);
@@ -592,8 +610,8 @@ public class RobotSoccer extends StateBasedController {
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
 					// Set robot in "waiting" state, ready for command input.
-					setState( waitingState );
-					//setState( wanderingState );
+					//setState( waitingState );
+					setState( testState );
 				}
 				
 			}).start();
@@ -605,6 +623,29 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 		
+	};
+	
+	//testState exists solely to test out robot functionality until the start LispOperator
+	//is implemented effectively. Don't hesitate to delete this little playground once it's served
+	//its purpose.
+	
+	IRobotState testState = new IRobotState ("test") {
+		@Override
+		public void enterState() {
+			
+			//Testing of retrieval of info from camera. Go ahead and delete
+			//if it serves your purposes, you won't hurt my feelings.
+			
+			Position puckPosition = getPuck();
+			Position selfPosition = getSelfPosition();
+			System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
+			System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			
+		}
 	};
 	
 	/**
