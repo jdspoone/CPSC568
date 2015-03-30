@@ -4,6 +4,7 @@ package iRobotCreate;
 import jade.semantics.lang.sl.grammar.Term;
 import casa.LispAccessible;
 import casa.ML;
+import casa.MLMessage;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
@@ -15,6 +16,7 @@ import casa.util.CASAUtil;
 import casa.util.Trace;
 import casa.Status;
 import iRobotCreate.IRobotState;
+import iRobotCreate.BallPusher.Position;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
@@ -38,8 +40,11 @@ public class RobotSoccer extends StateBasedController {
 	// Movement speed variables
 	private final int moveSpeed = 50;
 	private final int turnSpeed = 20;
-
+	private final int cameraPort = 8995;
+	private final int robotPort = 9100;
 	
+	private String myColour = "purple";
+	private String ballColour = "red";
 	
 	public boolean debugMode = false;		// Display debug messages for state/measurements on Command console
 	
@@ -165,9 +170,9 @@ public class RobotSoccer extends StateBasedController {
 	}
 
 	/**
-	   * Start an {@link iRobotCreate} robot at 7778.<br>
+	   * Start an {@link iRobotCreate} robot at 9100.<br>
 	   * Wait for it to be initialized.<br>
-	   * Start a {@link RobotSoccer} controller at 7777.<br>
+	   * Start a {@link RobotSoccer} controller at 9200.<br>
 	   * @param args
 	   * @author Rob Kremer
 	   */
@@ -219,7 +224,7 @@ public class RobotSoccer extends StateBasedController {
 
 	  		RobotSoccer controllerOfAlice = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfAlice", 9200, null
 	  				, "PROCESS", "CURRENT"
-	  				, "CONTROLS", ":7778"
+	  				, "CONTROLS", ":9100"
 	  				, "TRACE", "10"
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  				);
@@ -241,6 +246,15 @@ public class RobotSoccer extends StateBasedController {
 	 */
 	public RobotSoccer( ParamsMap params, AgentUI ui ) throws Exception {
 		super( params, ui );
+		
+		// parse through the parameter keys to see if we should be controlling
+		// a different color
+		
+		if (params.containsKey("COLOR")) 
+			myColour = (String)params.getJavaObject("COLOR");
+		if (params.containsKey("BALL-COLOR"))
+			ballColour = (String)params.getJavaObject("BALL-COLOR");
+				
 
 		// Register all valid states for a WallMeasurer agent: a short description is provided here
 		// A longer description is available where the states are implemented.
@@ -350,6 +364,68 @@ public class RobotSoccer extends StateBasedController {
 		// Start initializing the robot for its measurement task.
 		setState( startState );
 		
+	}
+	
+	/**
+	 * This embedded class implements the the notion of a position within the world
+	 * of robot soccer. It consists of an x-coordinate, a y-coordinate, and an angle. 
+	 * All of these are retrievable from the public variables x, y, and a.
+	 * 
+	 * Taken from BallPusher in the iRobotCreate package.
+	 * 
+	 * @author Rob Kremer
+	 * 
+	 */
+	
+	class Position {
+		public int x, y, a;
+		Position(String parsable) throws NumberFormatException, IllegalArgumentException {
+			String content[] = parsable.split(",");
+			if (content.length!=4) 
+				throw new IllegalArgumentException("BallPusher.Position("+parsable+"): Expected a comma-separted list of length 4.");
+			x = Integer.parseInt(content[1]);
+			y = Integer.parseInt(content[2]);
+			a = Integer.parseInt(content[3]);
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof Position))
+				return false;
+			Position p = (Position)obj;
+			return x==p.x && y==p.y && a==p.a;
+		}
+	}
+	
+	/**
+	 * This method polls the Camera to get the x-coordinate, y-coordinate, and angle
+	 * of the desired shape of the desired color.
+	 * 
+	 * Taken from BallPusher in the iRobotCreate package.
+	 * 
+	 * @param shape - the shape you wish to know the position for
+	 * @param color - the color of the shape you wish to know the position for
+	 * @author Rob Kremer
+	 * @return - the position of the desired object
+	 */
+	
+	protected Position askCamera(String shape, String color) {
+		try {
+			MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+			if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+				return new Position((String)reply.getParameter(ML.CONTENT));
+			}
+		} catch (Throwable e) {
+			println("error", "BallPusher.askCamera", e);
+		}
+		return null;
+	}
+	
+	protected Position getPuck() {
+		return askCamera("circle",ballColour);
+	}
+	
+	protected Position getSelfPosition() {
+		return askCamera("triangle",myColour);
 	}
 	
 	/**
