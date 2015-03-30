@@ -324,6 +324,29 @@ public class RobotSoccer extends StateBasedController {
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
 						
+		// Subscribe to alerts for VirtualWall updates
+		try {
+					@SuppressWarnings("unused")
+					SubscribeClientConversation convButtonPress = new SubscribeClientConversation(
+							"--subscription-request", 
+							this, server, 
+							"(all ?x (Buttons ?x))", null)
+					{
+						
+						@Override
+						protected void update(URLDescriptor agentB, jade.semantics.lang.sl.grammar.Term exp) {
+							if (exp==null)
+								return;
+							String intString = exp.toString();
+							int val = Integer.parseInt(intString);
+							onButtonPress( val );
+						}
+						
+					};
+		} catch (IllegalOperationException e) {
+			e.printStackTrace();
+		}
+		
 		// Start initializing the robot to play soccer.
 		setState( startState );
 	}
@@ -584,4 +607,17 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 	};
+	
+	/**
+	 * Utility method. On pressing the "play" button on the robot,
+	 * start or stop a game of soccer, as appropriate.
+	 */
+	public void onButtonPress(int val) {
+		if ( val == 1 ) {
+			if ( isStarted )
+				ROBOTSOCCER_STOP.execute( this, new ParamsMap(), this.getUI(), null );
+			else
+				ROBOTSOCCER_START.execute( this, new ParamsMap(), this.getUI(), null );
+		}
+	}
 }
