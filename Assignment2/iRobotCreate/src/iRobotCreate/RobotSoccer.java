@@ -53,6 +53,13 @@ public class RobotSoccer extends StateBasedController {
 	// Variable for one-on-one soccer (as opposed to a full two-on-two game)
 	private Boolean isSinglePlayer;
 	
+	// Variables for positions of entities in the environment
+	Position selfPosition;
+	Position puckPosition;
+	
+	Position intendedPosition;
+	double intendedDistance;
+	
 	// Variables tracking goals scored
 	private int playerGoals = 0;
 	private int opponentGoals = 0;
@@ -596,8 +603,10 @@ public class RobotSoccer extends StateBasedController {
 					try {
 						
 						// Poll the location of the robot and of the ball
-						Position selfPosition = getSelfPosition(); 
-						Position puckPosition = getPuck();
+						//Position selfPosition = getSelfPosition(); 
+						//Position puckPosition = getPuck();
+						selfPosition = getSelfPosition(); 
+						puckPosition = getPuck();
 						int xGoalCoord = 1152;
 						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
 						
@@ -643,7 +652,10 @@ public class RobotSoccer extends StateBasedController {
 						// Now rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg " + (int)angle + "))");
 						
-						// setState(firstTraversalState)
+						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
+						intendedDistance = k;
+						// Now try to actually get there
+						setState( firstTraversalState );
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
@@ -666,6 +678,16 @@ public class RobotSoccer extends StateBasedController {
 	 */
 	IRobotState firstTraversalState = new IRobotState( "firstTraversal" ) {
 		
+		private Position initialSelfPosition;
+		private Position initialPuckPosition;
+		
+		// Constants for robot travelling speed and margin of error
+		private final int allowedDeviation = 25;
+		private final int traversalSpeed = 50;
+		
+		// Time interval for polling the camera (in 1/10 sec)
+		private double timeInterval = 1;
+		
 		@Override
 		public void enterState() {
 			
@@ -676,12 +698,62 @@ public class RobotSoccer extends StateBasedController {
 						
 						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
 						
-						// Here we would like to know our current selfPosition, our desired position (behind the ball), the ball's position, and the distance to travel
-						// Travel this distance in small increments, polling the camera to check we're on course
-						// If we seem to be way off-course, break and try firstAlignState again
-						// If the ball moves, break and try firstAlignState again
-						// If there's an obstacle, do ???
-						// If we end up approx. where we want to be, excellent! enter a pushBallState.
+						// Grab current positions of the robot and puck
+						initialSelfPosition = selfPosition;
+						initialPuckPosition = puckPosition;
+						
+						// Calculate time interval for polling the camera (in 1/10ths of a second)
+						timeInterval = (allowedDeviation / traversalSpeed ) * 10;
+						
+						System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
+						
+						// Travel forward until we get to our intended position
+						tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + (int)( 10 * intendedDistance / traversalSpeed ) + ") (irobot.drive 0))" );
+											
+						// Wait for the robot to traverse the distance in small increments, polling the camera to check we're on course
+						while ( Math.abs( intendedDistance ) > allowedDeviation ) {
+							
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval*100, null );
+							
+							// Poll camera for updated positions
+							selfPosition = getSelfPosition();
+							puckPosition = getPuck();
+							
+							System.out.println( "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
+							// If the ball moves, break and try firstAlignState again
+							if ( Math.abs( distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) ) > allowedDeviation )
+								break;
+							
+							// Recalculate distance to go
+							double newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
+							System.out.println( "distance to go: " + newDistance );
+							
+							// If we seem to be way off-course, break and try firstAlignState again
+							if ( Math.abs( newDistance ) > Math.abs( intendedDistance ) )
+								break;
+							
+							// If the robot has stopped moving entirely, poke it again
+							else if ( Math.abs( newDistance ) == Math.abs( intendedDistance ) )
+								tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + (int)( 10 * intendedDistance / traversalSpeed ) + ") (irobot.drive 0))" );
+							
+							// TODO: If there's an obstacle, do ???
+							
+							intendedDistance = newDistance;
+						}
+						
+						// Just in case the robot hasn't completed its traversal for some reason, stop it now.
+						tellRobot( "(irobot.drive 0 :flush T :emergency T)" );
+						
+						if ( Math.abs( intendedDistance ) > allowedDeviation ) {
+							// Traversal failed...
+							setState( firstAlignState );
+						}
+											
+						// If we end up approx. where we want to be, excellent! enter a pushBallState, where we align to and then push the ball.
+						else {
+							System.out.println("ready to push the ball!!");
+							// setState( pushBallState );
+						}
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
