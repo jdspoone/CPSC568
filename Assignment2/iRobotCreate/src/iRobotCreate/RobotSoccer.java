@@ -346,6 +346,9 @@ public class RobotSoccer extends StateBasedController {
 		
 		// State which moves the robot to a point just above or below the puck
 		registerState( firstTraversalState );
+		
+		// State which aligns the robot to and then causes it to push the puck
+		registerState( pushBallState );
 				
 		// When the agent scores a goal, we enter the victory state
 		registerState( victoryState );
@@ -698,6 +701,8 @@ public class RobotSoccer extends StateBasedController {
 						
 						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
 						
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
+						
 						// Grab current positions of the robot and puck
 						initialSelfPosition = selfPosition;
 						initialPuckPosition = puckPosition;
@@ -733,7 +738,7 @@ public class RobotSoccer extends StateBasedController {
 								break;
 							
 							// If the robot has stopped moving entirely, poke it again
-							else if ( Math.abs( newDistance ) == Math.abs( intendedDistance ) )
+							else if ( Math.abs( (int)newDistance ) == Math.abs( (int)intendedDistance ) )
 								tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + (int)( 10 * intendedDistance / traversalSpeed ) + ") (irobot.drive 0))" );
 							
 							// TODO: If there's an obstacle, do ???
@@ -752,7 +757,7 @@ public class RobotSoccer extends StateBasedController {
 						// If we end up approx. where we want to be, excellent! enter a pushBallState, where we align to and then push the ball.
 						else {
 							System.out.println("ready to push the ball!!");
-							// setState( pushBallState );
+							setState( pushBallState );
 						}
 						
 					} catch (Throwable e) {
@@ -761,6 +766,66 @@ public class RobotSoccer extends StateBasedController {
 					}
 				
 					System.out.println(getURL().getFile()+" enter state first traversal thread ended.");
+
+				}
+			}).start();
+
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			// Not needed
+		}
+	};
+	
+	/**
+	 * Traversal state: after calculating a position in firstAlignState, move the robot to
+	 * (approximately) that position.
+	 */
+	IRobotState pushBallState = new IRobotState( "pushBall" ) {
+		
+		private Position initialSelfPosition;
+		private Position initialPuckPosition;
+		
+		// Constants for robot travelling speed and margin of error
+		private final int allowedDeviation = 25;
+		private final int traversalSpeed = 50;
+		
+		// Time interval for polling the camera (in 1/10 sec)
+		private double timeInterval = 1;
+		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						
+						System.out.println(getURL().getFile()+" enter state pushball thread started.");
+						
+						// Grab current positions of the robot and puck
+						selfPosition = getSelfPosition();
+						puckPosition = getPuck();
+						
+						int xGoalCoord = 1152;
+						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
+						
+						// Rotate to face goal
+						
+						// Push ball until goal scored
+						
+						// Goal scored? If yes, enter victoryState
+						
+						// If ball is no longer in front of the robot, go back to firstAlignState
+						
+						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
+					}
+				
+					System.out.println(getURL().getFile()+" enter state pushball thread ended.");
 
 				}
 			}).start();
