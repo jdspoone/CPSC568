@@ -50,6 +50,9 @@ public class RobotSoccer extends StateBasedController {
 	// Variable for this robot's target goal. True: y=0, false: y=700.
 	private Boolean whichGoal;
 	
+	// Variable for one-on-one soccer (as opposed to a full two-on-two game)
+	private Boolean isSinglePlayer;
+	
 	// Variables tracking goals scored
 	private int playerGoals = 0;
 	private int opponentGoals = 0;
@@ -67,8 +70,6 @@ public class RobotSoccer extends StateBasedController {
 	 * Once this command has been given once with all parameters, it may be repeated with no parameters to re-use the last settings.
 	 * This command is mapped onto pushing the "play" button on the robot.
 	 * 
-	 * NOTE - the name of this method should actually be start, but there appears to be a naming conflict here...
-	 * 
 	 * @return Status 0 if successful
 	 */
 	@SuppressWarnings("unused")
@@ -84,31 +85,56 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public Status execute(TransientAgent agent, ParamsMap params, AgentUI ui, org.armedbear.lisp.Environment lispEnv) {
 			
+			// If a game is in progress, stop it
+			if ( ( ( RobotSoccer ) agent ).isStarted )
+				ROBOTSOCCER_STOP.execute( ( ( RobotSoccer ) agent ), new ParamsMap(), ( ( RobotSoccer ) agent ).getUI(), null );
+			
 			// Flush current command queue
 			( ( RobotSoccer ) agent ).tellRobot( "(iRobot.drive 0 :flush T :emergency T)" );
-
 			
-			if ( params.containsKey( "MY" ) )
-				( ( RobotSoccer ) agent ).myColour = (String) params.getJavaObject( "MY" );
-
-			if ( params.containsKey( "PARTNER" ) )
-				( ( RobotSoccer ) agent ).partnerColour = (String) params.getJavaObject( "PARTNER" );
+			// If no parameters are given, use last settings;
+			// otherwise, re-set them from input values.
+			if ( !params.isEmpty() ) {
 			
-			if ( params.containsKey( "OP1" ) )
-				( ( RobotSoccer ) agent ).opponent1Colour = (String) params.getJavaObject( "OP1" );
-			
-			if ( params.containsKey( "OP2" ) )
-				( ( RobotSoccer ) agent ).opponent2Colour = (String) params.getJavaObject( "OP2" );
-			
-			if ( params.containsKey( "GOALZERO" ) ) 
-				( ( RobotSoccer ) agent ).whichGoal = (Boolean) params.getJavaObject( "GOALZERO" );
+				( ( RobotSoccer ) agent ).myColour = null;
+				if ( params.containsKey( "MY" ) )
+					( ( RobotSoccer ) agent ).myColour = (String) params.getJavaObject( "MY" );
+	
+				( ( RobotSoccer ) agent ).partnerColour = null;
+				if ( params.containsKey( "PARTNER" ) )
+					( ( RobotSoccer ) agent ).partnerColour = (String) params.getJavaObject( "PARTNER" );
+				
+				( ( RobotSoccer ) agent ).opponent1Colour = null;
+				if ( params.containsKey( "OP1" ) )
+					( ( RobotSoccer ) agent ).opponent1Colour = (String) params.getJavaObject( "OP1" );
+				
+				( ( RobotSoccer ) agent ).opponent2Colour = null;
+				if ( params.containsKey( "OP2" ) )
+					( ( RobotSoccer ) agent ).opponent2Colour = (String) params.getJavaObject( "OP2" );
+				
+				( ( RobotSoccer ) agent ).whichGoal = null;
+				if ( params.containsKey( "GOALZERO" ) ) 
+					( ( RobotSoccer ) agent ).whichGoal = (Boolean) params.getJavaObject( "GOALZERO" );
+				
+				( ( RobotSoccer ) agent ).isSinglePlayer = null;
+				// If a partner and a second opponent are not defined, assume a single player match.
+				if ( ( ( RobotSoccer ) agent ).partnerColour == null
+						&& ( ( RobotSoccer ) agent ).opponent2Colour == null ) {
+							( ( RobotSoccer ) agent ).isSinglePlayer = new Boolean( Boolean.TRUE );
+				}
+				
+				// If both a partner and a second opponent are defined, assume a double match.
+				else if ( ( ( RobotSoccer ) agent ).partnerColour != null
+						&& ( ( RobotSoccer ) agent ).opponent2Colour != null ) {
+							( ( RobotSoccer ) agent ).isSinglePlayer = new Boolean( Boolean.FALSE );
+				}
+			}
 			
 			// All parameters must be set at least once, and then they are saved for future runs. If some are not initialized, starting a game fails.
 			if ( ( ( RobotSoccer ) agent ).myColour == null
-					|| ( ( RobotSoccer ) agent ).partnerColour == null
 					|| ( ( RobotSoccer ) agent ).opponent1Colour == null
-					|| ( ( RobotSoccer ) agent ).opponent2Colour == null
-					|| ( ( RobotSoccer ) agent ).whichGoal == null ) {
+					|| ( ( RobotSoccer ) agent ).whichGoal == null 
+					|| ( ( RobotSoccer ) agent ).isSinglePlayer == null ) {
 						( (AbstractInternalFrame) ( ( RobotSoccer ) agent ).getUI() ).getCommandPanel().print( "Start failed: parameter(s) uninitialized." );
 						return new Status(0);
 			}
