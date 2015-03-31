@@ -336,6 +336,9 @@ public class RobotSoccer extends StateBasedController {
 		
 		// State which aligns the robot with a point just above or below the puck
 		registerState( firstAlignState );
+		
+		// State which moves the robot to a point just above or below the puck
+		registerState( firstTraversalState );
 				
 		// When the agent scores a goal, we enter the victory state
 		registerState( victoryState );
@@ -657,6 +660,46 @@ public class RobotSoccer extends StateBasedController {
 		}
 	};
 		
+	/**
+	 * Traversal state: after calculating a position in firstAlignState, move the robot to
+	 * (approximately) that position.
+	 */
+	IRobotState firstTraversalState = new IRobotState( "firstTraversal" ) {
+		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						
+						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
+						
+						// Here we would like to know our current selfPosition, our desired position (behind the ball), the ball's position, and the distance to travel
+						// Travel this distance in small increments, polling the camera to check we're on course
+						// If we seem to be way off-course, break and try firstAlignState again
+						// If the ball moves, break and try firstAlignState again
+						// If there's an obstacle, do ???
+						// If we end up approx. where we want to be, excellent! enter a pushBallState.
+						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
+					}
+				
+					System.out.println(getURL().getFile()+" enter state first traversal thread ended.");
+
+				}
+			}).start();
+
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			// Not needed
+		}
+	};
 	
 	/**
 	 * Victory state entered once the agent has scored a goal.
