@@ -22,6 +22,7 @@ import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
 
+import java.util.Vector;
 /**
  * Blah blah blah...
  *   
@@ -114,7 +115,7 @@ public class RobotSoccer extends StateBasedController {
 			
 			// Initialized parameters successfully. Begin playing a game of soccer.
 			( ( RobotSoccer ) agent ).isStarted = true;
-			( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).testState );
+			( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).firstAlignState );
 			
 			return new Status(0);
 		}
@@ -307,8 +308,8 @@ public class RobotSoccer extends StateBasedController {
 		// State entered when the command wait is typed
 		registerState( waitingState );
 		
-		//testState exists solely to test out robot functionality until the start LispOperator is implemented effectively
-		registerState( testState );
+		// State which aligns the robot with a point just above or below the puck
+		registerState( firstAlignState );
 				
 		// When the agent scores a goal, we enter the victory state
 		registerState( victoryState );
@@ -500,8 +501,7 @@ public class RobotSoccer extends StateBasedController {
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
 					// Set robot in "waiting" state, ready for command input.
-					//setState( waitingState );
-					setState( testState );
+					setState( firstAlignState);
 				}
 				
 			}).start();
@@ -515,32 +515,7 @@ public class RobotSoccer extends StateBasedController {
 		
 	};
 	
-	
-	//testState exists solely to test out robot functionality until the start LispOperator
-	//is implemented effectively. Don't hesitate to delete this little playground once it's served
-	//its purpose.
-	IRobotState testState = new IRobotState ("test") {
-		@Override
-		public void enterState() {
-			
-			//Testing of retrieval of info from camera. Go ahead and delete
-			//if it serves your purposes, you won't hurt my feelings.
-			
-			Position puckPosition = getPuck();
-			Position selfPosition = getSelfPosition();
-			
-			CASAUtil.sleepIgnoringInterrupts( 5000, null );
-			
-			//System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
-			//System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
-		}
 		
-		@Override
-		public void handleEvent(Sensor sensor, final short reading) {
-			
-		}
-	};
-	
 	/**
 	 * Idle state. Wait for command to begin playing soccer.
 	 */
@@ -576,8 +551,87 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 	};
+	
+	
+	/**
+	 * This state will align the robot with a point beyond the puck on the line connecting the puck and the center of the goal
+	 */
+	IRobotState firstAlignState = new IRobotState("firstAlign") {
+		
+		@Override
+		public void enterState() {
 			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						
+						// Poll the location of the robot and of the ball
+						Position selfPosition = getSelfPosition(); 
+						Position puckPosition = getPuck();
+						int xGoalCoord = 1152;
+						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
+						
+						System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
+						System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
+						System.out.println("Goal: " + xGoalCoord + " " + yGoalCoord);
+												
+						// Calculate the line connecting the puck and the goal
+						double slope = (puckPosition.y - yGoalCoord) / (puckPosition.x - xGoalCoord);
+						double intercept = puckPosition.y - (slope * puckPosition.x);
+						
+						System.out.println("Slope is " + slope);
+						System.out.println("Intercept is " + intercept);
+						
+						// Find a point further along that line
+						int offset = puckPosition.y > yGoalCoord ? 200 : -200;
+						int yFurther = puckPosition.y + offset;
+						int xFurther = (int)((yFurther - intercept) / slope);
+						
+						System.out.println("New point is (" + xFurther + "," + yFurther + ")");
+												
+						// Create yet another point on the same line as the robot and the direction its facing
+						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
+						int yImaginary = selfPosition.y + (int)(100.0 * Math.sin(selfPosition.a * Math.PI / 180));
+						
+						/*
+						 * Calculate the distances between:
+						 * 	i - the robot and the imaginary point
+						 * 	j - the imaginary point and the point behind the ball
+						 * 	k - the point behind the ball and the robot 
+						 */
+						double i = distance(selfPosition.x, selfPosition.y, xImaginary, yImaginary);
+						double j = distance(xImaginary, yImaginary, xFurther, yFurther);
+						double k = distance(xFurther, yFurther, selfPosition.x, selfPosition.y);
+						
+						// Now determine the angle opposite j, which is how much we want to turn the robot
+						double angle = angle(j, i, k) * 180 / Math.PI;
+						
+						// Depending on the current angle of the robot, negate the rotaion angle
+						if (selfPosition.a < 180)
+							angle = angle * -1;
+						
+						// Now rotate the robot by the angle we just calculated
+						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg " + (int)angle + "))");
+						
+						// setState(firstTraversalState)
+						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=optionalBackup]: " + e );
+					}
+				}
+			}).start();
 
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			// Not needed
+		}
+	};
+		
+	
 	/**
 	 * Victory state entered once the agent has scored a goal.
 	 * The robot plays a jubilant song; and the robot powers down.
@@ -586,20 +640,17 @@ public class RobotSoccer extends StateBasedController {
 		
 		@Override
 		public void enterState() {
-			
+								
+			// Display results to controller's Command console
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!" );
+				
+			// Play victory song
+			tellRobot( "(iRobot.execute \"141 1\")" );
+			CASAUtil.sleepIgnoringInterrupts( 5000, null ); // Wait for song to finish
+			tellRobot( "(iRobot.execute \"141 2\")" );
 						
-						
-						// Display results to controller's Command console
-						( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!" );
-						
-						// Play victory song
-						tellRobot( "(iRobot.execute \"141 1\")" );
-						CASAUtil.sleepIgnoringInterrupts( 5000, null ); // Wait for song to finish
-						tellRobot( "(iRobot.execute \"141 2\")" );
-						
-						// Power down
-						tellRobot( "(iRobot.mode 0)" );
-						
+			// Power down
+			tellRobot( "(iRobot.mode 0)" );			
 		}
 		
 		@Override
@@ -607,6 +658,7 @@ public class RobotSoccer extends StateBasedController {
 			// Not needed
 		}
 	};
+	
 	
 	/**
 	 * Utility method. On pressing the "play" button on the robot,
@@ -619,5 +671,41 @@ public class RobotSoccer extends StateBasedController {
 			else
 				ROBOTSOCCER_START.execute( this, new ParamsMap(), this.getUI(), null );
 		}
+	}
+	
+	
+	/**
+	 * This method takes 2 Position objects, and returns the distance between them
+	 * 
+	 * @param Some Position a
+	 * @param Some Position b
+	 * @return The distance between a and b
+	 */
+	public double distance(int ax, int ay, int bx, int by) {
+		
+		double xDiff = (double)(ax - bx);
+		double yDiff = (double)(ay - by);
+		
+		return Math.sqrt(Math.abs((xDiff * xDiff) + (yDiff * yDiff)));
+	}
+
+	
+	/**
+	 * This method takes the 3 sides of a triangle, with the longest side as the first argument, and returns the angle in radians opposite the longest side
+	 * 
+	 * @param a - The longest side of the triangle
+	 * @param b - Another side of the triangle 
+	 * @param c - Another side of the triangle
+	 * @return The angle in radians opposite the longest side of the triangle
+	 */
+	public double angle(double a, double b, double c) {
+		
+		assert(a >= b && a >= c);
+		
+		double cosAngle = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2.0 * b * c);
+		
+		assert(cosAngle >= -1.0 && cosAngle <= 1.0);
+		
+		return Math.acos(cosAngle);
 	}
 }
