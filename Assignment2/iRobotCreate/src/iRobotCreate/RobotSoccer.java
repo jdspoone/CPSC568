@@ -624,7 +624,7 @@ public class RobotSoccer extends StateBasedController {
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
 								
-						/*
+						
 						// If the line connecting the robot and the new point clashes with the puck
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
 														
@@ -651,7 +651,7 @@ public class RobotSoccer extends StateBasedController {
 							Thread.sleep(10000);
 							selfPosition = getSelfPosition(); 
 
-						} */
+						}
 																		
 						// Create yet another point on the same line as the robot and the direction its facing
 						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
