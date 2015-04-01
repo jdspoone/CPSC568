@@ -537,6 +537,8 @@ public class RobotSoccer extends StateBasedController {
 						errors.add( "RobotSoccer.enterState() [state=start]: " + e );
 					}
 
+					CASAUtil.sleepIgnoringInterrupts( 5000, null );
+					
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					
 					// Set robot in "waiting" state, ready for command input.
@@ -577,7 +579,7 @@ public class RobotSoccer extends StateBasedController {
 						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
 					}
-				
+					
 					System.out.println(getURL().getFile()+" enter state waiting thread ended.");
 
 				}
@@ -622,6 +624,7 @@ public class RobotSoccer extends StateBasedController {
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
 								
+						/*
 						// If the line connecting the robot and the new point clashes with the puck
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
 														
@@ -648,7 +651,7 @@ public class RobotSoccer extends StateBasedController {
 							Thread.sleep(10000);
 							selfPosition = getSelfPosition(); 
 
-						}
+						} */
 																		
 						// Create yet another point on the same line as the robot and the direction its facing
 						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
@@ -707,8 +710,9 @@ public class RobotSoccer extends StateBasedController {
 		private final int allowedDeviation = 25;
 		private final int traversalSpeed = 50;
 		
-		// Time interval for polling the camera (in 1/10 sec)
-		private double timeInterval = 1;
+		// Time interval for polling the camera (in milliseconds)
+		private final double cameraUpdateInterval = 500;
+		private double timeInterval = 500;
 		
 		@Override
 		public void enterState() {
@@ -720,24 +724,24 @@ public class RobotSoccer extends StateBasedController {
 						
 						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
 						
-						CASAUtil.sleepIgnoringInterrupts( 5000, null );
-						
 						// Grab current positions of the robot and puck
 						initialSelfPosition = selfPosition;
 						initialPuckPosition = puckPosition;
-						
-						// Calculate time interval for polling the camera (in 1/10ths of a second)
-						timeInterval = (allowedDeviation / traversalSpeed ) * 10;
-						
-						System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
-						
-						// Travel forward until we get to our intended position
-						tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + (int)( 10 * intendedDistance / traversalSpeed ) + ") (irobot.drive 0))" );
-											
+																
 						// Wait for the robot to traverse the distance in small increments, polling the camera to check we're on course
 						while ( Math.abs( intendedDistance ) > allowedDeviation ) {
+						
+							// Calculate time interval for polling the camera (in milliseconds)
+							// Currently, take the min of t=(distance-to-travel)/(speed) and t=camera-update-interval
+							timeInterval = Math.min( ( 1000 * intendedDistance / traversalSpeed ), cameraUpdateInterval );
 							
-							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval*100, null );
+							System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
+															
+							// Travel forward for the duration of a time interval
+							tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))" );
+
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
+							tellRobot("(irobot.drive 0)");
 							
 							// Poll camera for updated positions
 							selfPosition = getSelfPosition();
@@ -757,8 +761,8 @@ public class RobotSoccer extends StateBasedController {
 								break;
 							
 							// If the robot has stopped moving entirely, poke it again
-							else if ( Math.abs( (int)newDistance ) == Math.abs( (int)intendedDistance ) )
-								tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + (int)( 10 * intendedDistance / traversalSpeed ) + ") (irobot.drive 0))" );
+//							else if ( Math.abs( (int)newDistance ) == Math.abs( (int)intendedDistance ) )
+								//tellRobot( "(irobot.drive 0 :flush T)" );
 							
 							// TODO: If there's an obstacle, do ???
 							
@@ -810,8 +814,8 @@ public class RobotSoccer extends StateBasedController {
 		private final int allowedDeviation = 25;
 		private final int traversalSpeed = 50;
 		
-		// Time interval for polling the camera (in 1/10 sec)
-		private double timeInterval = 1;
+		// Time interval for polling the camera (in milliseconds)
+		private double timeInterval = 500;
 		
 		@Override
 		public void enterState() {
