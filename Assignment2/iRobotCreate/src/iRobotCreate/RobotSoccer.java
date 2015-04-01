@@ -612,25 +612,44 @@ public class RobotSoccer extends StateBasedController {
 						puckPosition = getPuck();
 						int xGoalCoord = 1152;
 						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
-						
-						System.out.println("Puck: " + puckPosition.x + " " + puckPosition.y + " " + puckPosition.a);
-						System.out.println("Self: " + selfPosition.x + " " + selfPosition.y + " " + selfPosition.a);
-						System.out.println("Goal: " + xGoalCoord + " " + yGoalCoord);
-												
+																
 						// Calculate the line connecting the puck and the goal
-						double slope = (puckPosition.y - yGoalCoord) / (puckPosition.x - xGoalCoord);
-						double intercept = puckPosition.y - (slope * puckPosition.x);
-						
-						System.out.println("Slope is " + slope);
-						System.out.println("Intercept is " + intercept);
-						
+						double slope = (double)(puckPosition.y - yGoalCoord) / (double)(puckPosition.x - xGoalCoord);
+						double intercept = (double)puckPosition.y - (slope * (double)puckPosition.x);
+												
 						// Find a point further along that line
-						int offset = puckPosition.y > yGoalCoord ? 200 : -200;
+						int offset = puckPosition.y > yGoalCoord ? 250 : -250;
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
-						
-						System.out.println("New point is (" + xFurther + "," + yFurther + ")");
-												
+								
+						// If the line connecting the robot and the new point clashes with the puck
+						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
+														
+							// Begin with the angle which will return the robot to angle 0
+							int angle = selfPosition.a;
+							
+							// Depending on whether the robot is above or below the puck, add or remove 90 degrees
+							if (selfPosition.y >= xGoalCoord)
+								angle += 90;
+							else
+								angle -= 90;
+							
+							// Ensure that the angle remains within the range [0,359)
+							angle = angle % 360;
+							
+							// Now calculcate the distance we want to move
+							int distance = Math.abs(selfPosition.y - puckPosition.y) + 200;
+							
+							// Rotate the robot by the calculated angle and move
+							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + angle + ") (irobot.moveby " + distance + "))");
+							
+							// Wait, and update our position.
+							// This seems like a bit of a hack...
+							Thread.sleep(10000);
+							selfPosition = getSelfPosition(); 
+
+						}
+																		
 						// Create yet another point on the same line as the robot and the direction its facing
 						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
 						int yImaginary = selfPosition.y + (int)(100.0 * Math.sin(selfPosition.a * Math.PI / 180));
@@ -653,7 +672,7 @@ public class RobotSoccer extends StateBasedController {
 							angle = angle * -1;
 						
 						// Now rotate the robot by the angle we just calculated
-						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.rotate-deg " + (int)angle + "))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
 						
 						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
 						intendedDistance = k;
@@ -913,5 +932,39 @@ public class RobotSoccer extends StateBasedController {
 		assert(cosAngle >= -1.0 && cosAngle <= 1.0);
 		
 		return Math.acos(cosAngle);
+	}
+	
+	
+	/**
+	 * This method takes the coordinates of the robot, the puck and another point, and determines whether
+	 * the line connecting the robot and the point intersect the puck, taking radius into account
+	 */
+	public boolean intersects(int xRobot, int yRobot, int xPoint, int yPoint, int xPuck, int yPuck) {
+		
+		// These are just guesses at the moment
+		double robotRadius = 100;
+		double puckRadius = 50;
+		
+		// Determine the line connected the robot and the point
+		double slope = (double)(yRobot - yPoint) / (double)(xRobot - xPoint);
+		double intercept = (double)yRobot - (slope * (double)xRobot);
+
+		// Determine the points of the line corresponding to the puck's x and y coordinates
+		int x = (int)((yPuck - intercept)/slope);
+		int y = (int)((slope * xPuck) + intercept);
+				
+		// Determine the distance between these points and the puck
+		double d1 = distance(x, yPuck, xPuck, yPuck);
+		double d2 = distance(xPuck, y, xPuck, yPuck);
+		
+		// If the distance is less than the combined length of the robot and the puck, return true
+		if (d1 < ((robotRadius * 2) + (puckRadius * 2)))
+			return true;
+		
+		if (d2 < ((robotRadius * 2) + (puckRadius * 2)))
+			return true;
+
+		// Otherwise, false
+		return false;
 	}
 }
