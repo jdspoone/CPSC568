@@ -253,6 +253,8 @@ public class RobotSoccer extends StateBasedController {
 	   * @author Rob Kremer
 	   */
 	  public static void main(String[] args) {
+		  
+			
 	  	iRobotCreate alice = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Alice", 9100, null
 	  			, "PROCESS", "CURRENT"
 	  			, "INSTREAM", "alice.in" //"/dev/tty.iRobot9"
@@ -412,6 +414,20 @@ public class RobotSoccer extends StateBasedController {
 			y = Integer.parseInt(content[2]);
 			a = Integer.parseInt(content[3]);
 		}
+		
+		Position(int x1, int y1,int a1) {
+			x = x1;
+			y = y1;
+			a = a1;
+		}
+		
+		// Useful to represent plots
+		Position(int x1,int y1) {
+			x = x1;
+			y = y1;
+			a = 0;
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if (!(obj instanceof Position))
@@ -421,7 +437,41 @@ public class RobotSoccer extends StateBasedController {
 		}
 	}
 	
+	// Vector in 3 dimension (the third dimension is useful to make cross product)
+	class Vector {
+		public int x, y,z;
+		Vector(int x1, int y1,int z1) {
+			x = x1;
+			y = y1;
+			z = z1;
+		}
+		
+		int DotProduct(Vector v1)
+		{
+			return x*v1.x + y*v1.y + z*v1.z ;
+		}
+		
+		Vector CrossProduct(Vector v1)
+		{
+			int vx,vy,vz ;
+			int x1 = v1.x, y1= v1.y, z1 = v1.z ;
+			
+			vx = y*z1-z*y1;
+			vy = z*x1-x*z1;
+			vz = x*y1-x1*y;
+			
+			Vector v = new Vector(vx,vy,vz);
+			
+			return v;
+		}
+		
+		double Norm()
+		{
+			return Math.sqrt(x*x+y*y+z*z) ; 
+		}
+	}
 	
+
 	/**
 	 * This method polls the Camera to get the x-coordinate, y-coordinate, and angle
 	 * of the desired shape of the desired color.
@@ -627,7 +677,8 @@ public class RobotSoccer extends StateBasedController {
 						
 						// If the line connecting the robot and the new point clashes with the puck
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
-														
+							
+							
 							// Begin with the angle which will return the robot to angle 0
 							int angle = selfPosition.a;
 							
@@ -649,7 +700,8 @@ public class RobotSoccer extends StateBasedController {
 							// Wait, and update our position.
 							// This seems like a bit of a hack...
 							Thread.sleep(10000);
-							selfPosition = getSelfPosition(); 
+							selfPosition = getSelfPosition();
+							
 
 						}
 																		
@@ -657,22 +709,19 @@ public class RobotSoccer extends StateBasedController {
 						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
 						int yImaginary = selfPosition.y + (int)(100.0 * Math.sin(selfPosition.a * Math.PI / 180));
 						
-						/*
-						 * Calculate the distances between:
-						 * 	i - the robot and the imaginary point
-						 * 	j - the imaginary point and the point behind the ball
-						 * 	k - the point behind the ball and the robot 
-						 */
-						double i = distance(selfPosition.x, selfPosition.y, xImaginary, yImaginary);
-						double j = distance(xImaginary, yImaginary, xFurther, yFurther);
+						Position Imaginary = new Position(xImaginary,yImaginary) ;
+						Position Further = new Position(xFurther,yFurther) ;
+						
 						double k = distance(xFurther, yFurther, selfPosition.x, selfPosition.y);
 						
-						// Now determine the angle opposite j, which is how much we want to turn the robot
-						double angle = angle(j, i, k) * 180 / Math.PI;
+						/*
+						 * Calculate the oriented angle between the lines
+						 * selfPosition - Imaginary and selfPosition - Further
+						 * 
+						 * This angle represents how much we want to turn and in which direction
+						 */
 						
-						// Depending on the current angle of the robot, negate the rotaion angle
-						if (selfPosition.a < 180)
-							angle = angle * -1;
+						double angle = angle(selfPosition, Imaginary, Further) * 180 / Math.PI;
 						
 						// Now rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
@@ -735,7 +784,7 @@ public class RobotSoccer extends StateBasedController {
 							// Currently, take the min of t=(distance-to-travel)/(speed) and t=camera-update-interval
 							timeInterval = Math.min( ( 1000 * intendedDistance / traversalSpeed ), cameraUpdateInterval );
 							
-							System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
+							//System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
 															
 							// Travel forward for the duration of a time interval
 							tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))" );
@@ -747,14 +796,15 @@ public class RobotSoccer extends StateBasedController {
 							selfPosition = getSelfPosition();
 							puckPosition = getPuck();
 							
-							System.out.println( "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
+							//System.out.println( "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
+							
 							// If the ball moves, break and try firstAlignState again
 							if ( Math.abs( distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) ) > allowedDeviation )
 								break;
 							
 							// Recalculate distance to go
 							double newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
-							System.out.println( "distance to go: " + newDistance );
+							//System.out.println( "distance to go: " + newDistance );
 							
 							// If we seem to be way off-course, break and try firstAlignState again
 							if ( Math.abs( newDistance ) > Math.abs( intendedDistance ) )
@@ -780,7 +830,7 @@ public class RobotSoccer extends StateBasedController {
 						// If we end up approx. where we want to be, excellent! enter a pushBallState, where we align to and then push the ball.
 						else {
 							System.out.println("ready to push the ball!!");
-							setState( pushBallState );
+							setState( victoryState );
 						}
 						
 					} catch (Throwable e) {
@@ -920,22 +970,36 @@ public class RobotSoccer extends StateBasedController {
 
 	
 	/**
-	 * This method takes the 3 sides of a triangle, with the longest side as the first argument, and returns the angle in radians opposite the longest side
+	 * This method takes 3 plots a,b,c of the plan and return the angle between vector ab and ac (oriented)
 	 * 
-	 * @param a - The longest side of the triangle
-	 * @param b - Another side of the triangle 
-	 * @param c - Another side of the triangle
-	 * @return The angle in radians opposite the longest side of the triangle
+	 * @param a - Plot of the plan
+	 * @param b - Plot of the plan 
+	 * @param c - Plot of the plan
+	 * @return The angle in radians between vector ab and ac
 	 */
-	public double angle(double a, double b, double c) {
+	public double angle(Position a, Position b, Position c) {
 		
-		assert(a >= b && a >= c);
+		double sign ;
 		
-		double cosAngle = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2.0 * b * c);
+		Vector ab = new Vector(b.x-a.x, b.y-a.y,0) ;
+		Vector ac = new Vector(c.x-a.x, c.y-a.y,0) ;
 		
-		assert(cosAngle >= -1.0 && cosAngle <= 1.0);
+		double cosAngle = ab.DotProduct(ac)/(ab.Norm()*ac.Norm());
+		double zcomponent = (ab.CrossProduct(ac).z);
 		
-		return Math.acos(cosAngle);
+		if (zcomponent != 0)
+		{
+			sign = zcomponent/Math.abs(zcomponent);
+		}
+		else
+		{
+			sign = 1;
+		}
+		
+		System.out.println(a.x+","+a.y+" - "+b.x+","+b.y+" - "+c.x+","+c.y+" = "+sign*Math.acos(cosAngle)*180/Math.PI);
+		
+		//The minus sign is because we count the angle in the reverse way
+		return -sign*Math.acos(cosAngle);
 	}
 	
 	
@@ -961,7 +1025,7 @@ public class RobotSoccer extends StateBasedController {
 		double d1 = distance(x, yPuck, xPuck, yPuck);
 		double d2 = distance(xPuck, y, xPuck, yPuck);
 		
-		// If the distance is less than the combined length of the robot and the puck, return true
+		// If the distance is less than the combined length of the robot and the puck, return true!
 		if (d1 < ((robotRadius * 2) + (puckRadius * 2)))
 			return true;
 		
