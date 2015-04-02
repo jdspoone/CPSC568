@@ -35,7 +35,6 @@ public class RobotSoccer extends StateBasedController {
 	
 	// Boolean for start or stop state
 	private boolean isStarted = false;
-	
 	// Port numbers 
 	private final static int cameraPort = 8995;
 	private final int robotPort = 9100;
@@ -57,7 +56,12 @@ public class RobotSoccer extends StateBasedController {
 	Position selfPosition;
 	Position puckPosition;
 	
+	// These are just guesses at the moment
+	public double robotRadius = 150;
+	public double puckRadius = 50;
+	
 	Position intendedPosition;
+	Position shoot;
 	double intendedDistance;
 	
 	// Variables tracking goals scored
@@ -672,40 +676,58 @@ public class RobotSoccer extends StateBasedController {
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
 								
+						//The Further position will be renamed shoot position here
+						//The shoot position is your final destination (where you can start trying 
+						// to score a goal
+						//The further position is just where you want to go for now.
+						
+						int xShoot = xFurther ;
+						int yShoot = yFurther ;
+						
+						shoot = new Position(xShoot,yShoot);
+						
 						// Check if the the puck lies on the path the robot will take to reach the new point 
-						
-						//Something needs to be done here, it does not work properly
-						
-						
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
-											
-							// There will be a collision if we do not adjust course, so first we need to rotate the robot
-							// Begin with the angle which will return the robot to angle 0
-							int angle = selfPosition.a;
 							
-							// Depending on whether the robot is above or below the puck, add or remove 90 degrees
-							if (selfPosition.y >= xGoalCoord)
-								angle += 90;
+							System.out.println("Intersection will occur if nothing changes");
+							
+							//We have to change the objective. We make a slight deviation
+							// of objectives. We will approach the ball in order to be 
+							// closer to it and be away of the previous 
+							//line selfPosition - puckPosition
+							
+							int s; 
+							//First we need the equation of the slope between Position and Puck
+							// y = sx + b is the equation of the line between Position and Puck
+							s = (selfPosition.y-puckPosition.y)/(selfPosition.x-puckPosition.x);
+							//The vector normal to this line is v = (s,-1)/sqrt(s*s+1)
+							// (collisions with walls are not handled for now)
+							
+							/** The next step is to know in which direction to go
+							 * W want the robot to be as far as possible from the goal
+							 * so that it will easier later to have the ball
+							 * between the robot and the goal
+							 */
+							
+							// We take a margin because we don't know the exact value of radius
+							int margin = 50 ;
+							
+							int xFurther1 = (int) (puckPosition.x + s/Math.sqrt(s*s+1)*(puckRadius+robotRadius+margin));
+							int yFurther1 = (int) (puckPosition.x - 1/Math.sqrt(s*s+1)*(puckRadius+robotRadius+margin));
+							
+							int xFurther2 = (int) (puckPosition.x - s/Math.sqrt(s*s+1)*(puckRadius+robotRadius+margin));
+							int yFurther2 = (int) (puckPosition.x + 1/Math.sqrt(s*s+1)*(puckRadius+robotRadius+margin));
+							
+							if (distance(xFurther1,yFurther1,xGoalCoord,yGoalCoord) > distance(xFurther2,yFurther2,xGoalCoord,yGoalCoord))
+							{
+								xFurther = xFurther1 ;
+								yFurther = yFurther1 ;
+							}
 							else
-								angle -= 90;
-							
-							// Ensure that the angle remains within the range [0,359)
-							angle = angle % 360;
-							
-							// Make the turn as small as possible
-							if (angle > 180)
-								angle -= 360;
-							
-							// Now calculcate the distance we want to move
-							int distance = Math.abs(selfPosition.y - puckPosition.y) + 250;
-							
-							// Rotate and move the robot by the calculated angle and distance
-							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + angle + ") (irobot.moveby " + distance + "))");
-							
-							// Wait a sufficiently long time, and update our position.
-							Thread.sleep(15000);
-							selfPosition = getSelfPosition(); 
-
+							{
+								xFurther = xFurther2;
+								yFurther = yFurther2;
+							}
 						}
 																		
 						// Create yet another point on the same line as the robot and the direction its facing
@@ -731,6 +753,8 @@ public class RobotSoccer extends StateBasedController {
 						
 						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
 						intendedDistance = k;
+						
+						System.out.println("We are oriented, let's go !");
 						// Now try to actually get there
 						setState( firstTraversalState );
 						
@@ -787,7 +811,7 @@ public class RobotSoccer extends StateBasedController {
 							// Currently, take the min of t=(distance-to-travel)/(speed) and t=camera-update-interval
 							timeInterval = Math.min( ( 1000 * intendedDistance / traversalSpeed ), cameraUpdateInterval );
 							
-							//System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
+							System.out.println("distance to travel: " + intendedDistance + "\npolling time interval: " + timeInterval );
 															
 							// Travel forward for the duration of a time interval
 							tellRobot( "(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))" );
@@ -803,7 +827,10 @@ public class RobotSoccer extends StateBasedController {
 							
 							// If the ball moves, break and try firstAlignState again
 							if ( Math.abs( distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) ) > allowedDeviation )
+							{
+								System.out.println("The ball has moved");
 								break;
+							}
 							
 							// Recalculate distance to go
 							double newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
@@ -811,7 +838,10 @@ public class RobotSoccer extends StateBasedController {
 							
 							// If we seem to be way off-course, break and try firstAlignState again
 							if ( Math.abs( newDistance ) > Math.abs( intendedDistance ) )
+							{
+								System.out.println("We are off-course");
 								break;
+							}
 							
 							// If the robot has stopped moving entirely, poke it again
 //							else if ( Math.abs( (int)newDistance ) == Math.abs( (int)intendedDistance ) )
@@ -827,13 +857,22 @@ public class RobotSoccer extends StateBasedController {
 						
 						if ( Math.abs( intendedDistance ) > allowedDeviation ) {
 							// Traversal failed...
+							System.out.println("We are too far from where we want to go");
 							setState( firstAlignState );
 						}
-											
+						
+						System.out.println("Distance Shoot - Robot: "+distance(shoot.x,shoot.y,selfPosition.x,selfPosition.y)) ;
 						// If we end up approx. where we want to be, excellent! enter a pushBallState, where we align to and then push the ball.
-						else {
+						if (distance(shoot.x,shoot.y,selfPosition.x,selfPosition.y)<=allowedDeviation)
+						{
 							System.out.println("ready to push the ball!!");
 							setState( victoryState );
+						}
+											
+						// Otherwise we have to try again
+						else {
+							System.out.println("We are too far from the shooting position");
+							setState( firstAlignState) ;
 						}
 						
 					} catch (Throwable e) {
@@ -1011,10 +1050,6 @@ public class RobotSoccer extends StateBasedController {
 	 * the line connecting the robot and the point intersect the puck, taking radius into account
 	 */
 	public boolean intersects(int xRobot, int yRobot, int xPoint, int yPoint, int xPuck, int yPuck) {
-		
-		// These are just guesses at the moment
-		double robotRadius = 100;
-		double puckRadius = 50;
 		
 		// Determine the line connected the robot and the point
 		double slope = (double)(yRobot - yPoint) / (double)(xRobot - xPoint);
