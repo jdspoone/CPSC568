@@ -608,8 +608,6 @@ public class RobotSoccer extends StateBasedController {
 					try {
 						
 						// Poll the location of the robot and of the ball
-						//Position selfPosition = getSelfPosition(); 
-						//Position puckPosition = getPuck();
 						selfPosition = getSelfPosition(); 
 						puckPosition = getPuck();
 						int xGoalCoord = 1152;
@@ -619,14 +617,15 @@ public class RobotSoccer extends StateBasedController {
 						double slope = (double)(puckPosition.y - yGoalCoord) / (double)(puckPosition.x - xGoalCoord);
 						double intercept = (double)puckPosition.y - (slope * (double)puckPosition.x);
 												
-						// Find a point further along that line
+						// Find a point further along that line, which is where we want to move to
 						int offset = puckPosition.y > yGoalCoord ? 250 : -250;
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
 								
-						// If the line connecting the robot and the new point clashes with the puck
+						// Check if the the puck lies on the path the robot will take to reach the new point 
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
-														
+											
+							// There will be a collision if we do not adjust course, so first we need to rotate the robot
 							// Begin with the angle which will return the robot to angle 0
 							int angle = selfPosition.a;
 							
@@ -646,7 +645,7 @@ public class RobotSoccer extends StateBasedController {
 							// Now calculcate the distance we want to move
 							int distance = Math.abs(selfPosition.y - puckPosition.y) + 250;
 							
-							// Rotate the robot by the calculated angle and move
+							// Rotate and move the robot by the calculated angle and distance
 							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + angle + ") (irobot.moveby " + distance + "))");
 							
 							// Wait a sufficiently long time, and update our position.
@@ -669,10 +668,12 @@ public class RobotSoccer extends StateBasedController {
 						double j = distance(xImaginary, yImaginary, xFurther, yFurther);
 						double k = distance(xFurther, yFurther, selfPosition.x, selfPosition.y);
 												
-						// Now determine the angle opposite j, which is how much we want to turn the robot
+						// Using the law of cosines, determine the angle opposite j.
+						// This is the smallest angle we can use to rotate the robot so its facing the correct direction
 						double angle = angle(j, i, k) * 180 / Math.PI;
-															
-						// Get the angle corresponding to the slope of the line connecting the robot and the point
+										
+						// But now we need to know if we rotate by that angle, the negation of that angle
+						// Firstly, get the angle corresponding to the slope of the line connecting the robot and the point
 						int a1 = (int)(Math.acos((selfPosition.x - xFurther) / k) * 180 / Math.PI);
 						
 						// Since acos only goes from 0 to 180, we need to do a little extra to ensure we get the correct angle
@@ -682,24 +683,24 @@ public class RobotSoccer extends StateBasedController {
 						// The second angle is just the opposite of the first
 						double a2 = (a1 + 180) % 360;
 												
-						// If the robot is below the point we want to get to...
+						// Now, if the robot is below the point we want to get to
 						if (selfPosition.y > yFurther) {
 							
-							// Check if we need to negate the rotation angle, based on the robot's current angle...
+							// Then we negate the angle by which we turn if the robot's angle is in the range (a1, a2)
 							if (selfPosition.a > a1 && selfPosition.a < a2) {
 								angle = angle * -1;
 							}
 						}
-						// Otherwise the robot is above the point...
+						// Otherwise, the robot is above the point
 						else {
 							
-							// Check if we need to negate the rotation angle, based on the robot's current angle...
+							// So we negate the angle by which we turn if the robot's angle is outside the range (a1, a2)
 							if (selfPosition.a > a1 || selfPosition.a < a2) {
 								angle = angle * -1;
 							}
 						}
 						
-						// Now rotate the robot by the angle we just calculated
+						// Now, rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
 						
 						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
