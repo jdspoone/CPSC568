@@ -658,8 +658,6 @@ public class RobotSoccer extends StateBasedController {
 					try {
 						
 						// Poll the location of the robot and of the ball
-						//Position selfPosition = getSelfPosition(); 
-						//Position puckPosition = getPuck();
 						selfPosition = getSelfPosition(); 
 						puckPosition = getPuck();
 						int xGoalCoord = 1152;
@@ -669,16 +667,19 @@ public class RobotSoccer extends StateBasedController {
 						double slope = (double)(puckPosition.y - yGoalCoord) / (double)(puckPosition.x - xGoalCoord);
 						double intercept = (double)puckPosition.y - (slope * (double)puckPosition.x);
 												
-						// Find a point further along that line
+						// Find a point further along that line, which is where we want to move to
 						int offset = puckPosition.y > yGoalCoord ? 250 : -250;
 						int yFurther = puckPosition.y + offset;
 						int xFurther = (int)((yFurther - intercept) / slope);
 								
+						// Check if the the puck lies on the path the robot will take to reach the new point 
 						
-						// If the line connecting the robot and the new point clashes with the puck
+						//Something needs to be done here, it does not work properly
+						
+						
 						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
-							
-							
+											
+							// There will be a collision if we do not adjust course, so first we need to rotate the robot
 							// Begin with the angle which will return the robot to angle 0
 							int angle = selfPosition.a;
 							
@@ -691,17 +692,19 @@ public class RobotSoccer extends StateBasedController {
 							// Ensure that the angle remains within the range [0,359)
 							angle = angle % 360;
 							
-							// Now calculcate the distance we want to move
-							int distance = Math.abs(selfPosition.y - puckPosition.y) + 200;
+							// Make the turn as small as possible
+							if (angle > 180)
+								angle -= 360;
 							
-							// Rotate the robot by the calculated angle and move
+							// Now calculcate the distance we want to move
+							int distance = Math.abs(selfPosition.y - puckPosition.y) + 250;
+							
+							// Rotate and move the robot by the calculated angle and distance
 							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + angle + ") (irobot.moveby " + distance + "))");
 							
-							// Wait, and update our position.
-							// This seems like a bit of a hack...
-							Thread.sleep(10000);
-							selfPosition = getSelfPosition();
-							
+							// Wait a sufficiently long time, and update our position.
+							Thread.sleep(15000);
+							selfPosition = getSelfPosition(); 
 
 						}
 																		
@@ -722,8 +725,8 @@ public class RobotSoccer extends StateBasedController {
 						 */
 						
 						double angle = angle(selfPosition, Imaginary, Further) * 180 / Math.PI;
-						
-						// Now rotate the robot by the angle we just calculated
+												
+						// Now, rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
 						
 						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
