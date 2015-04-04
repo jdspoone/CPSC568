@@ -1,28 +1,28 @@
 package iRobotCreate;
 
 
+import iRobotCreate.iRobotCommands.Sensor;
+import iRobotCreate.simulator.CameraSimulation;
+import iRobotCreate.simulator.Environment;
+
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map.Entry;
+
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
+import casa.Status;
 import casa.TransientAgent;
 import casa.abcl.CasaLispOperator;
 import casa.abcl.ParamsMap;
 import casa.agentCom.URLDescriptor;
 import casa.conversation2.SubscribeClientConversation;
-import casa.event.TimeEvent;
 import casa.exceptions.IllegalOperationException;
-import casa.ui.AgentUI;
 import casa.ui.AbstractInternalFrame;
+import casa.ui.AgentUI;
 import casa.util.CASAUtil;
 import casa.util.Trace;
-import casa.Status;
-import iRobotCreate.IRobotState;
-import iRobotCreate.BallPusher.Position;
-import iRobotCreate.iRobotCommands.Sensor;
-import iRobotCreate.simulator.CameraSimulation;
-import iRobotCreate.simulator.Environment;
-
-import java.util.Vector;
 /**
  * Blah blah blah...
  *   
@@ -412,6 +412,14 @@ public class RobotSoccer extends StateBasedController {
 			y = Integer.parseInt(content[2]);
 			a = Integer.parseInt(content[3]);
 		}
+		
+		Position(int x1,int y1,int a1)
+		{
+			x = x1;
+			y = y1;
+			a = a1;
+					
+		}
 		@Override
 		public boolean equals(Object obj) {
 			if (!(obj instanceof Position))
@@ -419,6 +427,17 @@ public class RobotSoccer extends StateBasedController {
 			Position p = (Position)obj;
 			return x==p.x && y==p.y && a==p.a;
 		}
+		
+		 @Override
+		 public String toString(){
+			 return "("+x+","+y+","+a+")";
+		 }
+		 
+		 @Override
+		 public int hashCode() {
+			return x*3+y*5+a*7;
+			 
+		 }
 	}
 	
 	
@@ -428,17 +447,55 @@ public class RobotSoccer extends StateBasedController {
 	 * 
 	 * Taken from BallPusher in the iRobotCreate package.
 	 * 
+	 * Whenever we ask the camera something, errors can occur
+	 * we ask it twice just to make sure the camera gives the same answer
+	 * (the camera is not likely to produce the exact same error twice)
+	 * 
+	 * if the camera is wrong, we ask the same question a certain number of time and we take
+	 * the answer that came up the most often.
+	 * 
+	 * 
 	 * @param shape - the shape you wish to know the position for
 	 * @param color - the color of the shape you wish to know the position for
 	 * @author Rob Kremer
 	 * @return - the position of the desired object
 	 */
+	
 	protected Position askCamera(String shape, String color) {
 		try {
-			MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
-			if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
-				return new Position((String)reply.getParameter(ML.CONTENT));
+			
+			int nb_try = 10;
+			
+			Position p1 = null,p2=null;
+			Position[] positions = new Position[nb_try];
+			
+			MLMessage reply1 = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+			if (reply1!=null && isA(reply1.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+				p1 = new Position((String)reply1.getParameter(ML.CONTENT));
 			}
+			
+			MLMessage reply2 = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+			if (reply2!=null && isA(reply2.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+				p2 = new Position((String)reply2.getParameter(ML.CONTENT));
+			}
+			
+			if (p1.equals(p2))
+			{
+				return p1;
+			}
+			else
+			{
+				for (int i=0;i<nb_try;i++)
+				{
+					MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+					if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+						positions[i] = new Position((String)reply.getParameter(ML.CONTENT));
+					}
+				}
+				
+				return max_occur(positions);
+			}
+			
 		} catch (Throwable e) {
 			println("error", "RobotSoccer.askCamera", e);
 		}
@@ -446,6 +503,37 @@ public class RobotSoccer extends StateBasedController {
 	}
 	
 	
+	private Position max_occur(Position[] positions) {
+		
+		HashMap<Position,Integer> hm = new HashMap<Position,Integer>();
+
+	    int value;
+		for (int i=0;i<positions.length;i++)
+		{
+			
+			value = 0;
+			if (hm.containsKey(positions[i]))
+			{
+				value = hm.get(positions[i]);
+			}
+			
+			hm.put(positions[i], value+1);
+		}
+		
+		int maximum = 0;
+		Position position_star = null;
+		for(Entry<Position, Integer> entry : hm.entrySet()) {
+			if (entry.getValue()>maximum)
+			{
+				maximum = entry.getValue();
+				position_star = entry.getKey();
+			}
+		}
+		
+		return position_star;
+	}
+
+
 	/**
 	 * Utility method which calls the askCamera method to find the position
 	 * of the puck directly.
