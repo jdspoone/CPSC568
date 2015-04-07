@@ -255,8 +255,10 @@ public class RobotSoccer extends StateBasedController {
 	  public static void main(String[] args) {
 	  	iRobotCreate alice = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Alice", 9100, null
 	  			, "PROCESS", "CURRENT"
-	  			, "INSTREAM", "alice.in" //"/dev/tty.iRobot9"
-	  			, "OUTSTREAM", "alice.out" //"/dev/tty.iRobot9"
+	  			, "INSTREAM", "alice.in"
+//	  			, "INSTREAM", "/dev/tty.ElementSerial-ElementSe"
+	  			, "OUTSTREAM", "alice.out"
+//	  			, "OUTSTREAM", "/dev/tty.ElementSerial-ElementSe"
 	  			, "TRACE", "10"
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
@@ -470,11 +472,13 @@ public class RobotSoccer extends StateBasedController {
 			Position[] positions = new Position[nb_try];
 			
 			MLMessage reply1 = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+//			MLMessage reply1 = sendRequestAndWait(ML.REQUEST, ML.EXECUTE, URLDescriptor.make("136.159.7.26", "9001"), ML.CONTENT, "(camera-agent.get-color-data "+ shape + " " + color + ")");
 			if (reply1!=null && isA(reply1.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
 				p1 = new Position((String)reply1.getParameter(ML.CONTENT));
 			}
 			
 			MLMessage reply2 = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+//			MLMessage reply2 = sendRequestAndWait(ML.REQUEST, ML.EXECUTE, URLDescriptor.make("136.159.7.26", "9001"), ML.CONTENT, "(camera-agent.get-color-data "+ shape + " " + color + ")");
 			if (reply2!=null && isA(reply2.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
 				p2 = new Position((String)reply2.getParameter(ML.CONTENT));
 			}
@@ -488,6 +492,7 @@ public class RobotSoccer extends StateBasedController {
 				for (int i=0;i<nb_try;i++)
 				{
 					MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(cameraPort), ML.CONTENT, shape+","+color);
+//					MLMessage reply = sendRequestAndWait(ML.REQUEST, ML.EXECUTE, URLDescriptor.make("136.159.7.26", "9001"), ML.CONTENT, "(camera-agent.get-color-data "+ shape + " " + color + ")");
 					if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
 						positions[i] = new Position((String)reply.getParameter(ML.CONTENT));
 					}
