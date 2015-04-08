@@ -921,7 +921,6 @@ public class RobotSoccer extends StateBasedController {
 		public void handleEvent(Sensor sensor, final short reading) {
 			switch (sensor) {
 			case BumpsAndWheelDrops:
-				int deg = 0;
 				
 				/* In case you're curious why a switch statement is here, remember that
 				 * a subscription reports any changes in a sensor reading, which also 
