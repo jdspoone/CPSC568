@@ -4,6 +4,7 @@ package iRobotCreate;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
+import jade.semantics.lang.sl.grammar.Term;
 
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -385,6 +386,8 @@ public class RobotSoccer extends StateBasedController {
 						}
 						
 					};
+					
+					
 		} catch (IllegalOperationException e) {
 			e.printStackTrace();
 		}
@@ -916,7 +919,33 @@ public class RobotSoccer extends StateBasedController {
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
-			// Not needed
+			switch (sensor) {
+			case BumpsAndWheelDrops:
+				int deg = 0;
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						
+						//back the robot up, and let's try realigning. Clearly something
+						//went wrong in order for us to hit a wall.
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						setState(firstAlignState);
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
 		}
 	};
 	
@@ -1019,6 +1048,16 @@ public class RobotSoccer extends StateBasedController {
 			else
 				ROBOTSOCCER_START.execute( this, new ParamsMap(), this.getUI(), null );
 		}
+	}
+	
+	/**
+	 * Utility method that will be called once a bump or wheel drop event is encountered.
+	 * Override of method in the Controller class.
+	 */
+	
+	@Override
+	protected void onBumpsAndWheelDrops(int val) {
+		getCurrentState().handleEvent( Sensor.BumpsAndWheelDrops, (short) val );
 	}
 	
 	
