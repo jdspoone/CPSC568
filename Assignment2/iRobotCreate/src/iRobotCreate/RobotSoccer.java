@@ -698,9 +698,7 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
-				@Override
-				public void run() {
+			
 					try {
 						
 						// Poll the location of the robot and of the ball
@@ -808,14 +806,42 @@ public class RobotSoccer extends StateBasedController {
 						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=optionalBackup]: " + e );
 					}
-				}
-			}).start();
+				
+			
 
 		}
 		
+		//Although it may not seem necessary at first, we need to handle bumps in this
+		//state if the robot goes into the wall when trying to adjust for intersecting
+		//with the puck at the beginning of the state.
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
-			// Not needed
+			switch (sensor) {
+			case BumpsAndWheelDrops:
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						
+						//back the robot up, and let's try realigning. Clearly something
+						//went wrong in order for us to hit a wall.
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						setState(firstAlignState);
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
 		}
 	};
 		
