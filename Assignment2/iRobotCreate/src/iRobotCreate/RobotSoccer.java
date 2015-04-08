@@ -445,6 +445,40 @@ public class RobotSoccer extends StateBasedController {
 		 }
 	}
 	
+	// Vector in 3 dimension (the third dimension is useful to make cross product)
+	class Vector {
+		public double x, y,z;
+		Vector(double x1, double y1,double z1) {
+			x = x1;
+			y = y1;
+			z = z1;
+		}
+		
+		double DotProduct(Vector v1)
+		{
+			return x*v1.x + y*v1.y + z*v1.z ;
+		}
+		
+		Vector CrossProduct(Vector v1)
+		{
+			double vx,vy,vz ;
+			double x1 = v1.x, y1= v1.y, z1 = v1.z ;
+			
+			vx = y*z1-z*y1;
+			vy = z*x1-x*z1;
+			vz = x*y1-x1*y;
+			
+			Vector v = new Vector(vx,vy,vz);
+			
+			return v;
+		}
+		
+		double Norm()
+		{
+			return Math.sqrt(x*x+y*y+z*z) ; 
+		}
+	}
+	
 	
 	/**
 	 * This method polls the Camera to get the x-coordinate, y-coordinate, and angle
@@ -1008,6 +1042,30 @@ public class RobotSoccer extends StateBasedController {
 						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
 						
 						// Rotate to face goal
+						// Using vector approach here
+						
+						//Unit vector defined by selfPosition.a
+						Vector self = new Vector(Math.cos(selfPosition.a * Math.PI / 180),Math.sin(selfPosition.a * Math.PI / 180),0);
+						
+						//Vector between goal and self Position
+						Vector self_goal = new Vector(xGoalCoord-selfPosition.x,yGoalCoord-selfPosition.y,0);
+						
+						//The angle between the self vector and self_goal vector
+						double angle_pos_goal;
+						//We calculate the direction of the angle
+						//Since the base is not well oriented, the orientation are inversed
+						//If the cross product is negative the angle is positive 
+						if (self.CrossProduct(self_goal).z < 0)
+						{
+							angle_pos_goal = Math.acos(self.DotProduct(self_goal)/self_goal.Norm()) ;
+						}
+						else
+						{
+							angle_pos_goal = -Math.acos(self.DotProduct(self_goal)/self_goal.Norm()) ;
+						}
+						
+						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(angle_pos_goal*180/Math.PI) + "))");
+						
 						
 						// Push ball until goal scored
 						
