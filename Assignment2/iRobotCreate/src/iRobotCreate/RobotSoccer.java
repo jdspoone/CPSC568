@@ -780,10 +780,7 @@ public class RobotSoccer extends StateBasedController {
 						// Determine the initial positions of the robot and the puck
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
-												
-						// Determine the unit vector corresponding to the angle of the robot
-						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
-						
+																		
 						// For the moment, assume the goal is always up top
 						Position goalPosition = new Position("goal," + 1152 + "," + 0 + "," + 0);
 						
@@ -794,11 +791,42 @@ public class RobotSoccer extends StateBasedController {
 												
 						// Determine the point to which we want to move
 						Position strikePosition = new Position(puckPosition, displacement);
+																		
+						// In the event that the puck lies inbetween the robot and the path we want to follow
+						if (intersects(selfPosition, strikePosition, puckPosition)) {
+								
+							// Determine distances by which we want to adjust in the x and y directions
+							int xAdjustment = 250;
+							int yAdjustment = Math.abs(selfPosition.y - puckPosition.y) + 250;
+							
+							// Determine the angle by which we need to turn to get horizontal
+							int horizontalAngle = selfPosition.x >= puckPosition.x ? selfPosition.a : (selfPosition.a + 180) % 360;
+							horizontalAngle = minimizeAngle(horizontalAngle);
+							
+							// Rotate, move and sleep
+							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + horizontalAngle + ") (irobot.moveby " + xAdjustment + "))");
+							Thread.sleep(10000);
+							
+							// Determine the other angle we need to turn to get vertical
+							int verticalAngle = selfPosition.y >= puckPosition.y ? 90 : -90;
+							
+							// Rotate, move and sleep
+							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + verticalAngle + ") (irobot.moveby " + yAdjustment + "))");
+							Thread.sleep(15000);
+							
+							System.out.println("\n\nPolling the Camera\n\n");
+							
+							// Update our position
+							selfPosition = getSelfPosition();
+						}
+						
+						// Determine the unit vector corresponding to the angle of the robot
+						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
 												
 						// Determine the vector between the robot and the strike position
 						Vec3 robotStrikeVector = new Vec3(strikePosition, selfPosition);
 						robotStrikeVector.normalize();
-						
+												
 						// Get the angle between the 2 vectors
 						double angle = angleBetween(robotDirectionVector, robotStrikeVector);
 																	
@@ -1136,23 +1164,23 @@ public class RobotSoccer extends StateBasedController {
 	 * This method takes the coordinates of the robot, the puck and another point, and determines whether
 	 * the line connecting the robot and the point intersect the puck, taking radius into account
 	 */
-	public boolean intersects(int xRobot, int yRobot, int xPoint, int yPoint, int xPuck, int yPuck) {
+	public boolean intersects(Position robotPosition, Position strikePosition, Position puckPosition) {
 		
 		// These are just guesses at the moment
 		double robotRadius = 100;
 		double puckRadius = 50;
 		
 		// Determine the line connected the robot and the point
-		double slope = (double)(yRobot - yPoint) / (double)(xRobot - xPoint);
-		double intercept = (double)yRobot - (slope * (double)xRobot);
+		double slope = (double)(robotPosition.y - strikePosition.y) / (double)(robotPosition.x - strikePosition.y);
+		double intercept = (double)robotPosition.y - (slope * (double)robotPosition.x);
 
 		// Determine the points of the line corresponding to the puck's x and y coordinates
-		int x = (int)((yPuck - intercept)/slope);
-		int y = (int)((slope * xPuck) + intercept);
+		int x = (int)((puckPosition.y - intercept)/slope);
+		int y = (int)((slope * puckPosition.x) + intercept);
 				
 		// Determine the distance between these points and the puck
-		double d1 = distance(x, yPuck, xPuck, yPuck);
-		double d2 = distance(xPuck, y, xPuck, yPuck);
+		double d1 = distance(x, puckPosition.y, puckPosition.x, puckPosition.y);
+		double d2 = distance(puckPosition.x, y, puckPosition.x, puckPosition.y);
 		
 		// If the distance is less than the combined length of the robot and the puck, return true
 		if (d1 < ((robotRadius * 2) + (puckRadius * 2)))
@@ -1179,5 +1207,17 @@ public class RobotSoccer extends StateBasedController {
 			angle =-angle;
 		
 		return angle * 180 / Math.PI;
+	}
+	
+	
+	/**
+	 * This method takes an angle in degrees, and returns the smallest equivalent angle
+	 */
+	int minimizeAngle(int a) {
+		int angle = a;
+		if (angle > 180)
+			angle = angle - 360;
+		
+		return angle;
 	}
 }
