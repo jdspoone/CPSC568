@@ -1130,26 +1130,6 @@ public class RobotSoccer extends StateBasedController {
 		
 		return Math.sqrt(Math.abs((xDiff * xDiff) + (yDiff * yDiff)));
 	}
-
-	
-	/**
-	 * This method takes the 3 sides of a triangle, with the longest side as the first argument, and returns the angle in radians opposite the longest side
-	 * 
-	 * @param a - The longest side of the triangle
-	 * @param b - Another side of the triangle 
-	 * @param c - Another side of the triangle
-	 * @return The angle in radians opposite the longest side of the triangle
-	 */
-	public double angle(double a, double b, double c) {
-		
-		assert(a >= b && a >= c);
-		
-		double cosAngle = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2.0 * b * c);
-		
-		assert(cosAngle >= -1.0 && cosAngle <= 1.0);
-		
-		return Math.acos(cosAngle);
-	}
 	
 	
 	/**
