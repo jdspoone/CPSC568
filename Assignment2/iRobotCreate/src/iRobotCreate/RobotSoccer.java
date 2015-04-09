@@ -48,8 +48,8 @@ public class RobotSoccer extends StateBasedController {
 	private String opponent2Colour;
 	private String ballColour = "red";
 	
-	// Variable for this robot's target goal. True: y=0, false: y=700.
-	private Boolean whichGoal;
+	// Variable for this robot's target goal. True: y=0, false: y=1304.
+	private Boolean whichGoal = true; // Default value of true for testing purposes
 	
 	// Variable for one-on-one soccer (as opposed to a full two-on-two game)
 	private Boolean isSinglePlayer;
@@ -57,6 +57,7 @@ public class RobotSoccer extends StateBasedController {
 	// Variables for positions of entities in the environment
 	Position selfPosition;
 	Position puckPosition;
+	Position goalPosition;
 	
 	Position intendedPosition;
 	double intendedDistance;
@@ -713,9 +714,12 @@ public class RobotSoccer extends StateBasedController {
 
 					CASAUtil.sleepIgnoringInterrupts( 5000, null );
 					
-					System.out.println(getURL().getFile()+" enter state start thread ended.");	
-					
+					// Set the goal position
+					int yGoal = whichGoal ? 0 : 1382;
+					Position goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
+										
 					// Set robot in "waiting" state, ready for command input.
+					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					setState( firstAlignState);
 				}
 				
@@ -781,9 +785,6 @@ public class RobotSoccer extends StateBasedController {
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
 																		
-						// For the moment, assume the goal is always up top
-						Position goalPosition = new Position("goal," + 1152 + "," + 0 + "," + 0);
-						
 						// Determine the vector from the goal to the ball, normalize and scale it by the distance we want
 						Vec3 displacement = new Vec3(puckPosition, goalPosition);
 						displacement.normalize();
@@ -1037,10 +1038,7 @@ public class RobotSoccer extends StateBasedController {
 						// Grab current positions of the robot and puck
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
-						
-						int xGoalCoord = 1152;
-						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
-						
+												
 						// Rotate to face goal
 						// Using vector approach here
 						
@@ -1048,7 +1046,7 @@ public class RobotSoccer extends StateBasedController {
 						Vec3 self = new Vec3(Math.cos(selfPosition.a * Math.PI / 180),Math.sin(selfPosition.a * Math.PI / 180),0);
 						
 						//Vector between goal and self Position
-						Vec3 self_goal = new Vec3(xGoalCoord-selfPosition.x,yGoalCoord-selfPosition.y,0);
+						Vec3 self_goal = new Vec3(goalPosition.x-selfPosition.x,goalPosition.y-selfPosition.y,0);
 						
 						//The angle between the self vector and self_goal vector
 						double angle_pos_goal;
