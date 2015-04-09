@@ -425,6 +425,13 @@ public class RobotSoccer extends StateBasedController {
 			a = a1;
 					
 		}
+		
+		Position(Position pos, Vec3 vec) {
+			x = pos.x + (int)vec.x;
+			y = pos.x + (int)vec.y;
+			a = pos.a;
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if (!(obj instanceof Position))
@@ -446,20 +453,47 @@ public class RobotSoccer extends StateBasedController {
 	}
 	
 	// Vector in 3 dimension (the third dimension is useful to make cross product)
-	class Vector {
-		public double x, y,z;
-		Vector(double x1, double y1,double z1) {
+	class Vec3 {
+		
+		// Default constructor
+		public double x, y, z;
+		Vec3(double x1, double y1, double z1) {
 			x = x1;
 			y = y1;
 			z = z1;
 		}
 		
-		double DotProduct(Vector v1)
+		// Constructor given an angle in degrees
+		Vec3(int angle) {
+			try {
+				x = Math.cos(angle * Math.PI / 180);
+				y = Math.sin(angle * Math.PI / 180);
+				z = 0;
+			} catch (Throwable e) {
+				System.out.println("Invalid angle");
+			}
+		}
+		
+		// Constructor given 2 positions
+		Vec3(Position pos1, Position pos2) {
+			x = pos1.x - pos2.x;
+			y = pos1.y - pos2.y;
+			z = 0;
+		}
+		
+		// Scale the vector by a given value
+		public void scale(double s) {
+			x = x * s;
+			y = y * s;
+			z = z * s;
+		}
+		
+		public double dot(Vec3 v1)
 		{
 			return x*v1.x + y*v1.y + z*v1.z ;
 		}
 		
-		Vector CrossProduct(Vector v1)
+		public Vec3 cross(Vec3 v1)
 		{
 			double vx,vy,vz ;
 			double x1 = v1.x, y1= v1.y, z1 = v1.z ;
@@ -467,15 +501,25 @@ public class RobotSoccer extends StateBasedController {
 			vx = y*z1-z*y1;
 			vy = z*x1-x*z1;
 			vz = x*y1-x1*y;
-			
-			Vector v = new Vector(vx,vy,vz);
-			
-			return v;
+						
+			return new Vec3(vx,vy,vz);
 		}
 		
-		double Norm()
+		public double length()
 		{
-			return Math.sqrt(x*x+y*y+z*z) ; 
+			return Math.sqrt(x*x + y*y + z*z) ; 
+		}
+		
+		public void normalize() {
+			double l = length();
+			x = x / l;
+			y = y / l;
+			z = z / l;
+		}
+		
+		@Override
+		public String toString() {
+			return "( " + x + ", " + y + ")";
 		}
 	}
 	
@@ -732,107 +776,35 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			
 					try {
-						
-						// Poll the location of the robot and of the ball
-						selfPosition = getSelfPosition(); 
+						// Determine the initial positions of the robot and the puck
+						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
-						int xGoalCoord = 1152;
-						int yGoalCoord = 0; // At the moment, let's just assume we're always going for the top goal...
-																
-						// Calculate the line connecting the puck and the goal
-						double slope = (double)(puckPosition.y - yGoalCoord) / (double)(puckPosition.x - xGoalCoord);
-						double intercept = (double)puckPosition.y - (slope * (double)puckPosition.x);
 												
-						// Find a point further along that line, which is where we want to move to
-						int offset = puckPosition.y > yGoalCoord ? 250 : -250;
-						int yFurther = puckPosition.y + offset;
-						int xFurther = (int)((yFurther - intercept) / slope);
-								
-						// Check if the the puck lies on the path the robot will take to reach the new point 
-						if (intersects(selfPosition.x, selfPosition.y, xFurther, yFurther, puckPosition.x, puckPosition.y)) {
-											
-							// There will be a collision if we do not adjust course, so first we need to rotate the robot
-							// Begin with the angle which will return the robot to angle 0
-							int angle = selfPosition.a;
-							
-							// Depending on whether the robot is above or below the puck, add or remove 90 degrees
-							if (selfPosition.y >= xGoalCoord)
-								angle += 90;
-							else
-								angle -= 90;
-							
-							// Ensure that the angle remains within the range [0,359)
-							angle = angle % 360;
-							
-							// Make the turn as small as possible
-							if (angle > 180)
-								angle -= 360;
-							
-							// Now calculcate the distance we want to move
-							int distance = Math.abs(selfPosition.y - puckPosition.y) + 250;
-							
-							// Rotate and move the robot by the calculated angle and distance
-							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + angle + ") (irobot.moveby " + distance + "))");
-							
-							// Wait a sufficiently long time, and update our position.
-							Thread.sleep(15000);
-							selfPosition = getSelfPosition(); 
-
-						}
-																		
-						// Create yet another point on the same line as the robot and the direction its facing
-						int xImaginary = selfPosition.x + (int)(100.0 * Math.cos(selfPosition.a * Math.PI / 180));
-						int yImaginary = selfPosition.y + (int)(100.0 * Math.sin(selfPosition.a * Math.PI / 180));
-												
-						/*
-						 * Calculate the distances between:
-						 * 	i - the robot and the imaginary point
-						 * 	j - the imaginary point and the point behind the ball
-						 * 	k - the point behind the ball and the robot 
-						 */
-						double i = distance(selfPosition.x, selfPosition.y, xImaginary, yImaginary);
-						double j = distance(xImaginary, yImaginary, xFurther, yFurther);
-						double k = distance(xFurther, yFurther, selfPosition.x, selfPosition.y);
-												
-						// Using the law of cosines, determine the angle opposite j.
-						// This is the smallest angle we can use to rotate the robot so its facing the correct direction
-						double angle = angle(j, i, k) * 180 / Math.PI;
-										
-						// But now we need to know if we rotate by that angle, the negation of that angle
-						// Firstly, get the angle corresponding to the slope of the line connecting the robot and the point
-						int a1 = (int)(Math.acos((selfPosition.x - xFurther) / k) * 180 / Math.PI);
+						// Determine the unit vector corresponding to the angle of the robot
+						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
 						
-						// Since acos only goes from 0 to 180, we need to do a little extra to ensure we get the correct angle
-						if (selfPosition.y < yFurther)
-							a1 = 360 - a1;
+						// For the moment, assume the goal is always up top
+						Position goalPosition = new Position("goal," + 1152 + "," + 0 + "," + 0);
 						
-						// The second angle is just the opposite of the first
-						double a2 = (a1 + 180) % 360;
+						// Determine the vector from the goal to the ball, normalize and scale it by the distance we want
+						Vec3 displacement = new Vec3(puckPosition, goalPosition);
+						displacement.normalize();
+						displacement.scale(250);
 												
-						// Now, if the robot is below the point we want to get to
-						if (selfPosition.y > yFurther) {
-							
-							// Then we negate the angle by which we turn if the robot's angle is in the range (a1, a2)
-							if (selfPosition.a > a1 && selfPosition.a < a2) {
-								angle = angle * -1;
-							}
-						}
-						// Otherwise, the robot is above the point
-						else {
-							
-							// So we negate the angle by which we turn if the robot's angle is outside the range (a1, a2)
-							if (selfPosition.a > a1 || selfPosition.a < a2) {
-								angle = angle * -1;
-							}
-						}
+						// Determine the point to which we want to move
+						Position strikePosition = new Position(puckPosition, displacement);
+												
+						// Determine the vector between the robot and the strike position
+						Vec3 robotStrikeVector = new Vec3(strikePosition, selfPosition);
+						robotStrikeVector.normalize();
 						
+						// Get the angle between the 2 vectors
+						double angle = angleBetween(robotDirectionVector, robotStrikeVector);
+																	
 						// Now, rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
-						
-						intendedPosition = new Position("intended," + xFurther + "," + yFurther + "," + "0");
-						intendedDistance = k;
+												
 						// Now try to actually get there
 						setState( firstTraversalState );
 						
@@ -1045,23 +1017,23 @@ public class RobotSoccer extends StateBasedController {
 						// Using vector approach here
 						
 						//Unit vector defined by selfPosition.a
-						Vector self = new Vector(Math.cos(selfPosition.a * Math.PI / 180),Math.sin(selfPosition.a * Math.PI / 180),0);
+						Vec3 self = new Vec3(Math.cos(selfPosition.a * Math.PI / 180),Math.sin(selfPosition.a * Math.PI / 180),0);
 						
 						//Vector between goal and self Position
-						Vector self_goal = new Vector(xGoalCoord-selfPosition.x,yGoalCoord-selfPosition.y,0);
+						Vec3 self_goal = new Vec3(xGoalCoord-selfPosition.x,yGoalCoord-selfPosition.y,0);
 						
 						//The angle between the self vector and self_goal vector
 						double angle_pos_goal;
 						//We calculate the direction of the angle
 						//Since the base is not well oriented, the orientation are inversed
 						//If the cross product is negative the angle is positive 
-						if (self.CrossProduct(self_goal).z < 0)
+						if (self.cross(self_goal).z < 0)
 						{
-							angle_pos_goal = Math.acos(self.DotProduct(self_goal)/self_goal.Norm()) ;
+							angle_pos_goal = Math.acos(self.dot(self_goal)/self_goal.length()) ;
 						}
 						else
 						{
-							angle_pos_goal = -Math.acos(self.DotProduct(self_goal)/self_goal.Norm()) ;
+							angle_pos_goal = -Math.acos(self.dot(self_goal)/self_goal.length()) ;
 						}
 						
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(angle_pos_goal*180/Math.PI) + "))");
@@ -1211,5 +1183,21 @@ public class RobotSoccer extends StateBasedController {
 
 		// Otherwise, false
 		return false;
+	}
+		
+	
+	/**
+	 * This method takes 2 vectors, and return the angle between then in degrees
+	 */
+	public double angleBetween(Vec3 vec1, Vec3 vec2) {
+		
+		double angle = Math.acos(vec1.dot(vec2)/vec2.length());
+		Vec3 cross = vec1.cross(vec2);
+		
+		// If the cross product is greater than 0, negate the angle
+		if (cross.z > 0)
+			angle =-angle;
+		
+		return angle * 180 / Math.PI;
 	}
 }
