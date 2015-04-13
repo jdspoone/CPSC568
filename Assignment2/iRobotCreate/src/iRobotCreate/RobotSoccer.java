@@ -716,7 +716,7 @@ public class RobotSoccer extends StateBasedController {
 					
 					// Set the goal position
 					int yGoal = whichGoal ? 0 : 1382;
-					Position goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
+					goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
 										
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
@@ -780,6 +780,9 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
 					try {
 						// Determine the initial positions of the robot and the puck
 						selfPosition = getSelfPosition();
@@ -813,7 +816,7 @@ public class RobotSoccer extends StateBasedController {
 							
 							// Rotate, move and sleep
 							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + verticalAngle + ") (irobot.moveby " + yAdjustment + "))");
-							Thread.sleep(15000);
+							Thread.sleep(10000);
 							
 							System.out.println("\n\nPolling the Camera\n\n");
 							
@@ -840,9 +843,10 @@ public class RobotSoccer extends StateBasedController {
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=optionalBackup]: " + e );
-					}
 				
-			
+					}
+				}
+			}).start();
 
 		}
 		
