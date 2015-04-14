@@ -799,33 +799,7 @@ public class RobotSoccer extends StateBasedController {
 						// Determine the point to which we want to move
 						Position strikePosition = new Position(puckPosition, displacement);
 																		
-						// In the event that the puck lies inbetween the robot and the path we want to follow
-						if (intersects(selfPosition, strikePosition, puckPosition)) {
-								
-							// Determine distances by which we want to adjust in the x and y directions
-							int xAdjustment = 250;
-							int yAdjustment = Math.abs(selfPosition.y - puckPosition.y) + 250;
-							
-							// Determine the angle by which we need to turn to get horizontal
-							int horizontalAngle = selfPosition.x >= puckPosition.x ? selfPosition.a : (selfPosition.a + 180) % 360;
-							horizontalAngle = minimizeAngle(horizontalAngle);
-							
-							// Rotate, move and sleep
-							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + horizontalAngle + ") (irobot.moveby " + xAdjustment + "))");
-							Thread.sleep(10000);
-							
-							// Determine the other angle we need to turn to get vertical
-							int verticalAngle = selfPosition.y >= puckPosition.y ? 90 : -90;
-							
-							// Rotate, move and sleep
-							tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + verticalAngle + ") (irobot.moveby " + yAdjustment + "))");
-							Thread.sleep(10000);
-							
-							System.out.println("\n\nPolling the Camera\n\n");
-							
-							// Update our position
-							selfPosition = getSelfPosition();
-						}
+						// Proceed as if the ball will never be inbetween ourselves and the point we want to move to
 						
 						// Determine the unit vector corresponding to the angle of the robot
 						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
