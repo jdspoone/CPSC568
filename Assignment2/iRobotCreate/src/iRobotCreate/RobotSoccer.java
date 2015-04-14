@@ -798,12 +798,12 @@ public class RobotSoccer extends StateBasedController {
 												
 						// Determine the point to which we want to move
 						Position strikePosition = new Position(puckPosition, displacement);
-																		
+									
 						// Proceed as if the ball will never be inbetween ourselves and the point we want to move to
 						
 						// Determine the unit vector corresponding to the angle of the robot
 						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
-												
+									
 						// Determine the vector between the robot and the strike position
 						Vec3 robotStrikeVector = new Vec3(strikePosition, selfPosition);
 						robotStrikeVector.normalize();
@@ -813,7 +813,10 @@ public class RobotSoccer extends StateBasedController {
 																	
 						// Now, rotate the robot by the angle we just calculated
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
-												
+						
+						// Make sure we sleep for the duration of the turn
+						Thread.sleep(7000);
+						
 						// Now try to actually get there
 						setState( firstTraversalState );
 						
