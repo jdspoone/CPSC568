@@ -48,8 +48,12 @@ public class RobotSoccer extends StateBasedController {
 	private String opponent2Colour;
 	private String ballColour = "red";
 	
-	// Variable for this robot's target goal. True: y=0, false: y=1304.
+	// Variable for this robot's target goal. True: y=0, false: y=700.
 	private Boolean whichGoal = true; // Default value of true for testing purposes
+	private int yGoal = 0;
+	
+	public static final int TOP_Y = 0;
+	public static final int BOTTOM_Y = 700;
 	
 	// Variable for one-on-one soccer (as opposed to a full two-on-two game)
 	private Boolean isSinglePlayer;
@@ -147,6 +151,12 @@ public class RobotSoccer extends StateBasedController {
 						( (AbstractInternalFrame) ( ( RobotSoccer ) agent ).getUI() ).getCommandPanel().print( "Start failed: parameter(s) uninitialized." );
 						return new Status(0);
 			}
+			
+			// Set this robot's intended goal (top or bottom) based on input setting.
+			if ( ( ( RobotSoccer ) agent ).whichGoal )
+				( ( RobotSoccer ) agent ).yGoal = TOP_Y;
+			else
+				( ( RobotSoccer ) agent ).yGoal = BOTTOM_Y;
 			
 			// Initialized parameters successfully. Begin playing a game of soccer.
 			( ( RobotSoccer ) agent ).isStarted = true;
