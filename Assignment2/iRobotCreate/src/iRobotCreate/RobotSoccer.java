@@ -48,20 +48,21 @@ public class RobotSoccer extends StateBasedController {
 	private String opponent2Colour;
 	private String ballColour = "red";
 	
-	// Variable for this robot's target goal. True: y=0, false: y=700.
+	// Variable for this robot's target goal. True: top, false: bottom.
 	private Boolean whichGoal = true; // Default value of true for testing purposes
-	private int yGoal = 0;
-	
-	public static final int TOP_Y = 0;
-	public static final int BOTTOM_Y = 700;
 	
 	// Variable for one-on-one soccer (as opposed to a full two-on-two game)
 	private Boolean isSinglePlayer;
+	
+	// Variable for whether this robot should consider itself an attacker (=0) or defender (=1)
+	private static int playerNumber = 0;
+	private int myNumber;
 	
 	// Variables for positions of entities in the environment
 	Position selfPosition;
 	Position puckPosition;
 	Position goalPosition;
+	Position secondGoalPosition;
 	
 	Position intendedPosition;
 	double intendedDistance;
@@ -152,15 +153,25 @@ public class RobotSoccer extends StateBasedController {
 						return new Status(0);
 			}
 			
-			// Set this robot's intended goal (top or bottom) based on input setting.
-			if ( ( ( RobotSoccer ) agent ).whichGoal )
-				( ( RobotSoccer ) agent ).yGoal = TOP_Y;
-			else
-				( ( RobotSoccer ) agent ).yGoal = BOTTOM_Y;
+			// Default to attacker (ie. goal-scorer) behaviour.
+			// In the case of a double game, the second robot should use defender (ie. goal-guarding) behaviour.
+			( ( RobotSoccer ) agent ).myNumber = playerNumber;
+				
+			// Switch behaviour for the second robot.
+			if ( !( ( RobotSoccer ) agent ).isSinglePlayer ) {
+				if ( playerNumber == 0 )
+					playerNumber++;
+				else
+					playerNumber = 0;
+			}
 			
 			// Initialized parameters successfully. Begin playing a game of soccer.
 			( ( RobotSoccer ) agent ).isStarted = true;
-			( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).firstAlignState );
+			
+			if ( ( ( RobotSoccer ) agent ).myNumber == 0 )
+				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).firstAlignState );
+			else if ( ( ( RobotSoccer ) agent ).myNumber == 1 )
+				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).secondAlignState );
 			
 			return new Status(0);
 		}
@@ -358,11 +369,20 @@ public class RobotSoccer extends StateBasedController {
 		// State which aligns the robot with a point just above or below the puck
 		registerState( firstAlignState );
 		
+		// State which aligns the robot with the goal
+		registerState( secondAlignState );
+		
 		// State which moves the robot to a point just above or below the puck
 		registerState( firstTraversalState );
 		
+		// State which moves the robot to the goal
+		registerState( secondTraversalState );
+		
 		// State which aligns the robot to and then causes it to push the puck
 		registerState( pushBallState );
+		
+		// State which moves the robot within the bounds of the goal
+		registerState( patrolState );
 				
 		// When the agent scores a goal, we enter the victory state
 		registerState( victoryState );
@@ -734,6 +754,8 @@ public class RobotSoccer extends StateBasedController {
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					setState( firstAlignState);
+					//setState( secondAlignState);
+
 				}
 				
 			}).start();
@@ -873,7 +895,94 @@ public class RobotSoccer extends StateBasedController {
 			}
 		}
 	};
+
+	/**
+	 * This state will align the robot with the center of the goal.
+	 */
+	IRobotState secondAlignState = new IRobotState("secondAlign") {
 		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						// Determine the initial positions of the robot and the puck
+						selfPosition = getSelfPosition();
+						
+						// Set the opposing goal position
+						int yGoal = (!whichGoal) ? 0 : 1382;
+						if (yGoal == 0)
+							yGoal = yGoal + (int) iRobotCommands.chassisDiameter;
+						else
+							yGoal = yGoal - (int) iRobotCommands.chassisDiameter;
+						secondGoalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
+																		
+						// Determine the unit vector corresponding to the angle of the robot
+						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
+									
+						// Determine the vector between the robot and the goal position
+						Vec3 robotGoalVector = new Vec3(secondGoalPosition, selfPosition);
+						robotGoalVector.normalize();
+												
+						// Get the angle between the 2 vectors
+						double angle = angleBetween(robotDirectionVector, robotGoalVector);
+																	
+						// Now, rotate the robot by the angle we just calculated
+						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)angle + "))");
+						
+						// Make sure we sleep for the duration of the turn
+						Thread.sleep(7000);
+						
+						// Now try to actually get there
+						intendedPosition = secondGoalPosition;
+						setState( secondTraversalState );
+						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=optionalBackup]: " + e );
+				
+					}
+				}
+			}).start();
+
+		}
+		
+		//Although it may not seem necessary at first, we need to handle bumps in this
+		//state if the robot goes into the wall when trying to adjust for intersecting
+		//with the puck at the beginning of the state.
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			switch (sensor) {
+			case BumpsAndWheelDrops:
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						
+						//back the robot up, and let's try realigning. Clearly something
+						//went wrong in order for us to hit a wall.
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						setState(secondAlignState);
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
+		}
+	};
+	
 	/**
 	 * Traversal state: after calculating a position in firstAlignState, move the robot to
 	 * (approximately) that position.
@@ -1004,6 +1113,98 @@ public class RobotSoccer extends StateBasedController {
 	};
 	
 	/**
+	 * Traversal state: after calculating a position in secondAlignState, move the robot to
+	 * (approximately) that position.
+	 */
+	IRobotState secondTraversalState = new IRobotState( "secondTraversal" ) {
+		
+		// Constants for robot travelling speed and margin of error
+		private final int allowedDeviation = 150;
+		private final int traversalSpeed = 100;
+		
+		// Time interval for polling the camera (in milliseconds)
+		private final double cameraUpdateInterval = 500;
+		private double timeInterval = 500;
+		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+
+						double newDistance;
+						do {
+							// Poll camera for updated positions
+							selfPosition = getSelfPosition();
+							
+							newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
+							System.out.println( "distance to go: " + newDistance );
+
+						timeInterval = Math.min( ( 1000 * newDistance / traversalSpeed ), cameraUpdateInterval );
+							tellRobot("(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))");
+//							Thread.sleep( (long)timeInterval );
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
+							tellRobot("(irobot.drive 0)");
+						}
+						while ( Math.abs( newDistance ) > allowedDeviation );
+						tellRobot("(irobot.drive 0 :flush T)");
+											
+						// If we end up approx. where we want to be, excellent! enter a pushBallState, where we align to and then push the ball.
+						System.out.println("ready!!");
+						setState( patrolState );
+						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
+					}
+				
+					System.out.println(getURL().getFile()+" enter state first traversal thread ended.");
+
+				}
+			}).start();
+
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			switch (sensor) {
+			case Overcurrents:
+				if ( reading > 0 ) {
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");					
+				}
+				break;
+				
+			case BumpsAndWheelDrops:
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						
+						//back the robot up, and let's try realigning. Clearly something
+						//went wrong in order for us to hit a wall.
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						setState(secondAlignState);
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
+		}
+	};
+		
+	/**
 	 * Traversal state: after calculating a position in firstAlignState, move the robot to
 	 * (approximately) that position.
 	 */
@@ -1066,6 +1267,108 @@ public class RobotSoccer extends StateBasedController {
 						// If ball is no longer in front of the robot, go back to firstAlignState
 						
 						
+					} catch (Throwable e) {
+						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
+					}
+				
+					System.out.println(getURL().getFile()+" enter state pushball thread ended.");
+
+				}
+			}).start();
+
+		}
+		
+		@Override
+		public void handleEvent(Sensor sensor, final short reading) {
+			// Not needed
+		}
+	};
+	
+	/**
+	 * Traversal state: after calculating a position in firstAlignState, move the robot to
+	 * (approximately) that position.
+	 */
+	IRobotState patrolState = new IRobotState( "patrol" ) {
+		
+		// Endpoints of patrolling area
+		private final int GOAL_LEFT_EDGE = (2304/ 2) - (int)Math.floor(2304 / 3) / 2;
+		private final int GOAL_RIGHT_EDGE = GOAL_LEFT_EDGE + (int)Math.floor(2304 / 3);
+		
+		// Constants for robot travelling speed and margin of error
+		private final int allowedDeviation = 25;
+		private final int traversalSpeed = 100;
+				
+		// Time interval for polling the camera (in milliseconds)
+		private final double cameraUpdateInterval = 500;
+		private double timeInterval = 500;
+		
+		@Override
+		public void enterState() {
+			
+			makeSubthread( new Runnable() {
+				@Override
+				public void run() {
+					try {
+						
+						// Grab current position of the robot
+						selfPosition = getSelfPosition();
+						
+						// Rotate to face right
+						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(selfPosition.a) + "))");
+						// Make sure we sleep for the duration of the turn
+						Thread.sleep(7000);
+						
+						// Drive until endpoint reached
+						double patrolDistance;
+						do {
+							// Poll camera for updated positions
+							selfPosition = getSelfPosition();
+							
+							patrolDistance = GOAL_RIGHT_EDGE - selfPosition.x;
+							System.out.println( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_RIGHT_EDGE);
+
+							if ( patrolDistance < 0 )
+								break;
+							
+						timeInterval = Math.min( ( 1000 * patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							tellRobot("(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))");
+							Thread.sleep( (long)timeInterval );
+//							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
+							tellRobot("(irobot.drive 0)");
+						}
+						while ( patrolDistance > allowedDeviation );
+						tellRobot("(irobot.drive 0 :flush T)");
+						
+						// Rotate to face left
+						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(180) + "))");
+						// Make sure we sleep for the duration of the turn
+						Thread.sleep(7000);
+						
+						// Drive until endpoint reached
+						do {
+							// Poll camera for updated positions
+							selfPosition = getSelfPosition();
+							
+							patrolDistance = selfPosition.x - GOAL_LEFT_EDGE;
+							System.out.println( "distance to go: " + patrolDistance );
+							System.out.println( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_LEFT_EDGE);
+
+							if ( patrolDistance < 0 )
+								break;
+							
+						timeInterval = Math.min( ( 1000 * patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							tellRobot("(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))");
+//							Thread.sleep( (long)timeInterval );
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
+							tellRobot("(irobot.drive 0)");
+						}
+						while ( patrolDistance > allowedDeviation );
+						tellRobot("(irobot.drive 0 :flush T)");
+						
+						// Reset
+						setState( patrolState );
+											
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
