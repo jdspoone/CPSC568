@@ -753,8 +753,8 @@ public class RobotSoccer extends StateBasedController {
 										
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
-//					setState( firstAlignState);
-					setState( secondAlignState);
+					setState( firstAlignState);
+//					setState( secondAlignState);
 
 				}
 				
@@ -850,6 +850,7 @@ public class RobotSoccer extends StateBasedController {
 						Thread.sleep(7000);
 						
 						// Now try to actually get there
+						intendedPosition = strikePosition;	// We need this var to tell us where we're headed.
 						setState( firstTraversalState );
 						
 					} catch (Throwable e) {
@@ -1000,11 +1001,13 @@ public class RobotSoccer extends StateBasedController {
 		
 		// Constants for robot travelling speed and margin of error
 		private final int allowedDeviation = 25;
-		private final int traversalSpeed = 50;
+		private final int traversalSpeed = 100;
 		
 		// Time interval for polling the camera (in milliseconds)
 		private final double cameraUpdateInterval = 500;
 		private double timeInterval = 500;
+		
+		private boolean traversalFailed;
 		
 		@Override
 		public void enterState() {
@@ -1013,8 +1016,68 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
+
+						traversalFailed = false;
 						
-						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
+						initialSelfPosition = getSelfPosition();
+						initialPuckPosition = getPuck();
+						
+						intendedDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );						
+						
+						double newDistance;
+
+						// Attempt to travel toward the intended position behind the ball.
+						// Break up the traversal into intervals, approximately the same as those of camera updates.
+						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
+						do {							
+							// Calculate the distance remaining to the intended position behind the ball
+							newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + newDistance );
+							
+							// If we're close enough, stop.
+							if ( newDistance <= allowedDeviation )
+								break;
+							
+							// If we seem to be way off-course, break and try firstAlignState again
+							if ( Math.abs( newDistance ) > Math.abs( intendedDistance ) ) {
+								traversalFailed = true;
+								break;
+							}
+							
+							// Calculate a time to travel. This will usually be the same as a camera update interval,
+							// unless the distance remaining is very small.
+							timeInterval = Math.min( ( newDistance / traversalSpeed ), cameraUpdateInterval );
+							
+							// Calculate the distance we can travel in that interval
+							int intervalDistance = Math.min( (int)newDistance, (int)timeInterval * traversalSpeed );
+
+							// Drive forward for the duration of the calculated time.
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + intervalDistance + "))");	
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval+2000, null );
+							
+							// Poll camera for updated positions
+							selfPosition = getSelfPosition();
+							puckPosition = getPuck();
+							
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
+							// If the ball moves, break and try firstAlignState again
+							if ( Math.abs( distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) ) > allowedDeviation ) {
+								traversalFailed = true;
+								break;
+							}
+ 						}
+						while ( newDistance > allowedDeviation );
+						
+						// Clear robot command queue.
+						tellRobot("(irobot.drive 0 :flush T)");
+							
+						// If all goes well, we are now positioned behind the ball.
+						// Enter pushBall state, in which the robot aligns itself behind the ball and begins pushing it toward the goal
+						if ( !traversalFailed )
+							setState( pushBallState );
+						
+						// DEPRECATED!!!
+/*						System.out.println(getURL().getFile()+" enter state first traversal thread started.");
 						
 						// Grab current positions of the robot and puck
 						initialSelfPosition = selfPosition;
@@ -1074,14 +1137,13 @@ public class RobotSoccer extends StateBasedController {
 							System.out.println("ready to push the ball!!");
 							setState( pushBallState );
 						}
-						
+	*/
+					
 					} catch (Throwable e) {
-						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
-						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
+						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
+						errors.add( "RobotSoccer.enterState() [state=firstTraversal]: " + e );
 					}
 				
-					System.out.println(getURL().getFile()+" enter state first traversal thread ended.");
-
 				}
 			}).start();
 
@@ -1107,6 +1169,7 @@ public class RobotSoccer extends StateBasedController {
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						traversalFailed = true;
 						setState(firstAlignState);
 						break;
 					default:
