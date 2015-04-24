@@ -753,8 +753,8 @@ public class RobotSoccer extends StateBasedController {
 										
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
-					setState( firstAlignState);
-					//setState( secondAlignState);
+//					setState( firstAlignState);
+					setState( secondAlignState);
 
 				}
 				
@@ -919,9 +919,9 @@ public class RobotSoccer extends StateBasedController {
 						// We don't want to travel directly into the goal, but patrol in front of it.
 						// Adjust for one robot-radius away from the goal.
 						if (yGoal == 0)
-							yGoal = yGoal + (int) iRobotCommands.chassisRadius;
+							yGoal = yGoal + (int) iRobotCommands.chassisRadius + 15;
 						else
-							yGoal = yGoal - (int) iRobotCommands.chassisRadius;
+							yGoal = yGoal - (int) iRobotCommands.chassisRadius - 15;
 
 						secondGoalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
 																		
@@ -1133,6 +1133,8 @@ public class RobotSoccer extends StateBasedController {
 		private final double cameraUpdateInterval = 500;
 		private double timeInterval = 500;
 		
+		private boolean errorOccurred;
+		
 		@Override
 		public void enterState() {
 			
@@ -1142,7 +1144,46 @@ public class RobotSoccer extends StateBasedController {
 					try {
 
 						double newDistance;
+						errorOccurred = false;
+
+						// Attempt to travel toward the intended position in front of the goal.
+						// Break up the traversal into intervals, approximately the same as those of camera updates.
+						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
+						do {
+							// Poll camera for updated position
+							selfPosition = getSelfPosition();
+							
+							// Calculate the distance remaining to the intended goal-guarding position
+							newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + newDistance );
+							
+							// If we're close enough, stop in front of the goal.
+							if ( newDistance <= allowedDeviation )
+								break;
+							
+							// Calculate a time to travel. This will usually be the same as a camera update interval,
+							// unless the distance remaining is very small.
+							timeInterval = Math.min( ( newDistance / traversalSpeed ), cameraUpdateInterval );
+							
+							// Calculate the distance we can travel in that interval
+							int intervalDistance = Math.min( (int)newDistance, (int)timeInterval * traversalSpeed );
+
+							// Drive forward for the duration of the calculated time.
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + intervalDistance + "))");	
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval+2000, null );
+ 						}
+						while ( newDistance > allowedDeviation );
 						
+						if ( !errorOccurred ) {
+							// Clear robot command queue.
+							tellRobot("(irobot.drive 0 :flush T)");
+							
+							// If all goes well, we are now in front of our own goal, ready to start patrolling.
+							// Enter patrolling state, in which the robot moves back and forth in front of the goal.
+							setState( patrolState );
+						}
+										
+/*						// DEPRECATED!!!
 						// Attempt to travel toward the intended position in front of the goal.
 						// Break up the traversal into intervals, approximately the same as those of camera updates.
 						// Thus, we travel for one interval; check the camera for our updated position; and, if necessary, repeat the process until we reach our intended position.
@@ -1168,10 +1209,7 @@ public class RobotSoccer extends StateBasedController {
 						
 						// Clear robot command queue.
 						tellRobot("(irobot.drive 0 :flush T)");
-											
-						// If all goes well, we are now in front of our own goal, ready to start patrolling.
-						// Enter patrolling state, in which the robot moves back and forth in front of the goal.
-						setState( patrolState );
+	*/										
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=secondTraversal]: Unexpected error in state thread", e);
@@ -1189,10 +1227,11 @@ public class RobotSoccer extends StateBasedController {
 			case Overcurrents:
 				// If we get overcurrents, back up and try aligning to the goal again.
 				if ( reading > 0 ) {
+					errorOccurred = true;
 					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
 					setState(secondAlignState);
+					break;
 				}
-				break;
 				
 			case BumpsAndWheelDrops:
 				
@@ -1207,7 +1246,7 @@ public class RobotSoccer extends StateBasedController {
 					case 1: //right bump
 					case 2: //left bump	
 					case 3: //both bumps
-						
+						errorOccurred = true;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
@@ -1317,7 +1356,7 @@ public class RobotSoccer extends StateBasedController {
 		private final int GOAL_RIGHT_EDGE = GOAL_LEFT_EDGE + (int)Math.floor(2304 / 3);
 		
 		// Constants for robot travelling speed and margin of error
-		private final int allowedDeviation = 25;
+		private final int allowedDeviation = 100;
 		private final int traversalSpeed = 100;
 				
 		// Time interval for polling the camera (in milliseconds)
@@ -1343,32 +1382,36 @@ public class RobotSoccer extends StateBasedController {
 						
 						// Drive until endpoint reached
 						double patrolDistance;
+						// Attempt to travel toward the intended position at the right edge of the goal.
+						// Break up the traversal into intervals, approximately the same as those of camera updates.
+						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {
 							// Poll camera for updated position
 							selfPosition = getSelfPosition();
-							
+
 							// Calculate remaining distance to travel
 							patrolDistance = GOAL_RIGHT_EDGE - selfPosition.x;
-							System.out.println( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_RIGHT_EDGE);
-
-							// If we happen to overshoot the end of the goal, stop rightward patrol.
-							if ( patrolDistance < 0 )
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_RIGHT_EDGE);
+							
+							// If we happen to overshoot the end of the goal, or we're close enough, stop rightward patrol.
+							if ( patrolDistance <= allowedDeviation )
 								break;
 							
-							// Calculate time interval to travel. This is usually the same as a camera update interval,
-							// unless the remaining distance is very small.
-							timeInterval = Math.min( ( 1000 * patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							// Calculate a time to travel. This will usually be the same as a camera update interval,
+							// unless the distance remaining is very small.
+							timeInterval = Math.min( ( patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							
+							// Calculate the distance we can travel in that interval
+							int intervalDistance = Math.min( (int)patrolDistance, (int)timeInterval * traversalSpeed );
 
-							// Drive forward for the duration of the calculated interval
-							tellRobot("(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))");
-							Thread.sleep( (long)timeInterval );
-//							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
-							tellRobot("(irobot.drive 0)");
-						}
+							// Drive forward for the duration of the calculated time.
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + intervalDistance + "))");	
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval+2000, null );
+ 						}
 						while ( patrolDistance > allowedDeviation );
-
-						// Clear robot command queue
-						tellRobot("(irobot.drive 0 :flush T)");
+						
+						// Clear robot command queue.
+						tellRobot("(irobot.drive 0 :flush T :emergency T)");
 						
 						// Rotate to face left (i.e. a=180 degrees)
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(180) + "))");
@@ -1377,32 +1420,36 @@ public class RobotSoccer extends StateBasedController {
 						Thread.sleep(7000);
 						
 						// Drive until endpoint reached
+						// Attempt to travel toward the intended position at the left edge of the goal.
+						// Break up the traversal into intervals, approximately the same as those of camera updates.
+						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {
 							// Poll camera for updated position
 							selfPosition = getSelfPosition();
-							
-							// Calculate remaining distance to travel.
-							patrolDistance = selfPosition.x - GOAL_LEFT_EDGE;
-							System.out.println( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_LEFT_EDGE);
 
-							// If we overshoot the end of the goal, end leftward patrol.
-							if ( patrolDistance < 0 )
+							// Calculate remaining distance to travel
+							patrolDistance = selfPosition.x - GOAL_LEFT_EDGE;
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_LEFT_EDGE);
+							
+							// If we happen to overshoot the end of the goal, or we're close enough, stop rightward patrol.
+							if ( patrolDistance <= allowedDeviation )
 								break;
 							
-							// Calculate time interval to travel. This is usually the same as a camera update interval,
-							// unless the remaining distance is very small.
-							timeInterval = Math.min( ( 1000 * patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							// Calculate a time to travel. This will usually be the same as a camera update interval,
+							// unless the distance remaining is very small.
+							timeInterval = Math.min( ( patrolDistance / traversalSpeed ), cameraUpdateInterval );
+							
+							// Calculate the distance we can travel in that interval
+							int intervalDistance = Math.min( (int)patrolDistance, (int)timeInterval * traversalSpeed );
 
-							// Drive forward for the duration of the calculated interval.
-							tellRobot("(progn () (irobot.drive " + traversalSpeed + ") (irobot.execute 155 " + timeInterval / 100 + "))");
-//							Thread.sleep( (long)timeInterval );
-							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval, null );
-							tellRobot("(irobot.drive 0)");
-						}
+							// Drive forward for the duration of the calculated time.
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + intervalDistance + "))");	
+							CASAUtil.sleepIgnoringInterrupts( (long)timeInterval+2000, null );
+ 						}
 						while ( patrolDistance > allowedDeviation );
-
+						
 						// Clear the robot command queue.
-						tellRobot("(irobot.drive 0 :flush T)");
+						tellRobot("(irobot.drive 0 :flush T :emergency T)");
 						
 						// Reset state so we do it all over again!
 						setState( patrolState );
@@ -1419,7 +1466,39 @@ public class RobotSoccer extends StateBasedController {
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
-			// Not needed
+			switch (sensor) {
+			case Overcurrents:
+				// If we get overcurrents, back up and try aligning to the goal again.
+				if ( reading > 0 ) {
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
+					setState(secondAlignState);
+					break;
+				}
+				
+			case BumpsAndWheelDrops:
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						//back the robot up, and let's try realigning. Clearly something
+						//went wrong in order for us to hit a wall.
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						setState(secondAlignState);
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
 		}
 	};
 	
