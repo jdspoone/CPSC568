@@ -1283,9 +1283,33 @@ public class RobotSoccer extends StateBasedController {
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(angle_pos_goal*180/Math.PI) + "))");
 						Thread.sleep(7000);
 						
+						// Calculate the distance between the robot and goal
+						double remainingDistance = distance(selfPosition.x, selfPosition.y, goalPosition.x, goalPosition.y);
 						
-						// Push ball until goal scored
-						
+						// While there is still distance to go...
+						while (remainingDistance > allowedDeviation) {
+																				
+							// Determine how far we have to travel, either 150 or the remaining distance, which is less.
+							int driveDistance = (remainingDistance < 150) ? (int)remainingDistance : 150;
+							
+							// Drive forward by the previously calculated distance
+							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + driveDistance + "))");
+							
+							// Wait a fixed duration which will definitely be long enough
+							Thread.sleep(5000);
+							
+							// Poll the camera for the location of ourself and the puck
+							selfPosition = getSelfPosition();
+							puckPosition = getPuck();
+							
+							// Update the remaining distance after polling the camera
+							remainingDistance = distance(selfPosition.x, selfPosition.y, goalPosition.x, goalPosition.y);
+							
+							// Ensure the ball is where we expect it to be, if not enter first align state
+							if (false)
+								setState(firstAlignState);
+						}
+												
 						// Goal scored? If yes, enter victoryState
 						
 						// If ball is no longer in front of the robot, go back to firstAlignState
