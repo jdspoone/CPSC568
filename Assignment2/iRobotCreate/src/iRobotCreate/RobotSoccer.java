@@ -1027,7 +1027,7 @@ public class RobotSoccer extends StateBasedController {
 						double newDistance;
 
 						// Attempt to travel toward the intended position behind the ball.
-						// Break up the traversal into intervals, approximately the same as those of camera updates.
+						// Break up the traversal into intervals.
 						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {							
 							// Calculate the distance remaining to the intended position behind the ball
