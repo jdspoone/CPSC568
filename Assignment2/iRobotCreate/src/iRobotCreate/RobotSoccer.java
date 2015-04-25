@@ -1261,31 +1261,27 @@ public class RobotSoccer extends StateBasedController {
 						// Grab current positions of the robot and puck
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
-												
-						// Rotate to face goal
-						// Using vector approach here
-						
-						//Unit vector defined by selfPosition.a
+																		
+						// Unit vector defined by selfPosition.a
 						Vec3 self = new Vec3(Math.cos(selfPosition.a * Math.PI / 180),Math.sin(selfPosition.a * Math.PI / 180),0);
 						
-						//Vector between goal and self Position
+						// Vector between goal and self Position
 						Vec3 self_goal = new Vec3(goalPosition.x-selfPosition.x,goalPosition.y-selfPosition.y,0);
 						
-						//The angle between the self vector and self_goal vector
+						// The angle between the self vector and self_goal vector
 						double angle_pos_goal;
-						//We calculate the direction of the angle
-						//Since the base is not well oriented, the orientation are inversed
-						//If the cross product is negative the angle is positive 
-						if (self.cross(self_goal).z < 0)
-						{
-							angle_pos_goal = Math.acos(self.dot(self_goal)/self_goal.length()) ;
-						}
-						else
-						{
-							angle_pos_goal = -Math.acos(self.dot(self_goal)/self_goal.length()) ;
-						}
 						
+						// We calculate the direction of the angle
+						// Since the base is not well oriented, the orientation are inversed
+						// If the cross product is negative the angle is positive 
+						if (self.cross(self_goal).z < 0)
+							angle_pos_goal = Math.acos(self.dot(self_goal)/self_goal.length()) ;
+						else
+							angle_pos_goal = -Math.acos(self.dot(self_goal)/self_goal.length()) ;
+						
+						// Rotate the robot and wait for a fixed durtation
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(angle_pos_goal*180/Math.PI) + "))");
+						Thread.sleep(7000);
 						
 						
 						// Push ball until goal scored
