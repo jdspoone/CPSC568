@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
+import casa.PerformDescriptor;
 import casa.Status;
 import casa.TransientAgent;
 import casa.abcl.CasaLispOperator;
@@ -1666,5 +1667,41 @@ public class RobotSoccer extends StateBasedController {
 			angle = angle - 360;
 		
 		return angle;
+	}
+	
+	// These three methods clean up the conversations we form with the
+	// the camera.
+	
+	/**
+	 * Return an agree to a propose discharge for register-color.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+	
+	public PerformDescriptor receiveRegisterColor(MLMessage message) {
+		return new PerformDescriptor();
+	}
+	
+	/**
+	 * Return an agree to a propose discharge for get-color-position.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+	
+	public PerformDescriptor receiveGetColorPosition(MLMessage message) {
+		return new PerformDescriptor();
+	}
+	
+	/**
+	 * Return an agree to a propose discharge for color-calibration.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+	
+	public PerformDescriptor receiveColorCalibration(MLMessage message) {
+		return new PerformDescriptor();
 	}
 }
