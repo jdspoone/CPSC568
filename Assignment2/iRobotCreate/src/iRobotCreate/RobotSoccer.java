@@ -1,6 +1,7 @@
 package iRobotCreate;
 
 
+import iRobotCreate.BallPusher.Position;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
@@ -577,6 +578,18 @@ public class RobotSoccer extends StateBasedController {
 	
 	protected Position askCamera(String shape, String color) {
 		try {
+			MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(8995), ML.CONTENT, shape+","+color);
+			if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+				return new Position((String)reply.getParameter(ML.CONTENT));
+			}
+		} catch (Throwable e) {
+			println("error", "BallPusher.askCamera", e);
+		}
+		return null;
+	}
+	
+	/*protected Position askCamera(String shape, String color) {
+		try {
 			
 			int nb_try = 10;
 			
@@ -652,7 +665,7 @@ public class RobotSoccer extends StateBasedController {
 		
 		return position_star;
 	}
-
+*/
 
 	/**
 	 * Utility method which calls the askCamera method to find the position
