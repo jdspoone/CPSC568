@@ -1283,14 +1283,35 @@ public class RobotSoccer extends StateBasedController {
 						tellRobot("(progn () (irobot.drive 0) (irobot.rotate-deg " + (int)(angle_pos_goal*180/Math.PI) + "))");
 						Thread.sleep(7000);
 						
+						// Poll the camera for the location of ourself and the puck
+						selfPosition = getSelfPosition();
+						puckPosition = getPuck();
+						
 						// Calculate the distance between the robot and goal
 						double remainingDistance = distance(selfPosition.x, selfPosition.y, goalPosition.x, goalPosition.y);
 						
+						// Maintain an interation count
+						int iteration = 0;
+												
 						// While there is still distance to go...
 						while (remainingDistance > allowedDeviation) {
-																				
+															
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + remainingDistance );
+							
 							// Determine how far we have to travel, either 150 or the remaining distance, which is less.
 							int driveDistance = (remainingDistance < 150) ? (int)remainingDistance : 150;
+														
+							// Get the direction vector corresponding to the angle of the robot, and scale it accordingly
+							Vec3 directionVector = new Vec3(selfPosition.a);
+							directionVector.scale(driveDistance); 
+															
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "direction vector is: " + directionVector.toString() );
+														
+							// Use this to determine the intended position of the puck
+							Position intendedPuckPosition = new Position(puckPosition, directionVector);
+							
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "current puck position is: " + puckPosition.toString() );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "intended puck position is: " + intendedPuckPosition.toString() );
 							
 							// Drive forward by the previously calculated distance
 							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + driveDistance + "))");
@@ -1301,13 +1322,23 @@ public class RobotSoccer extends StateBasedController {
 							// Poll the camera for the location of ourself and the puck
 							selfPosition = getSelfPosition();
 							puckPosition = getPuck();
+												
+							// Ensure the ball is where we expect it to be, if not enter first align state
+							double errorDistance = distance(puckPosition.x, puckPosition.y, intendedPuckPosition.x, intendedPuckPosition.y);
+
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "new puck position is: " + puckPosition.toString() );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "error distance is: " + errorDistance );
+
+							// The first time through, the error distance is going to be larger because the robot didn't start in contact with the puck
+							// For the moment, let's just give it a pass on that one
+							if (iteration > 0 && errorDistance > allowedDeviation) {
+								setState(firstAlignState);
+							}
 							
 							// Update the remaining distance after polling the camera
 							remainingDistance = distance(selfPosition.x, selfPosition.y, goalPosition.x, goalPosition.y);
 							
-							// Ensure the ball is where we expect it to be, if not enter first align state
-							if (false)
-								setState(firstAlignState);
+							iteration++;
 						}
 												
 						// Goal scored? If yes, enter victoryState
