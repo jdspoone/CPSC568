@@ -459,7 +459,7 @@ public class RobotSoccer extends StateBasedController {
 		
 		Position(Position pos, Vec3 vec) {
 			x = pos.x + (int)vec.x;
-			y = pos.x + (int)vec.y;
+			y = pos.y + (int)vec.y;
 			a = pos.a;
 		}
 		
