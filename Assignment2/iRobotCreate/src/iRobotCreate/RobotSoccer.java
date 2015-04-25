@@ -1087,6 +1087,8 @@ public class RobotSoccer extends StateBasedController {
 						// Enter pushBall state, in which the robot aligns itself behind the ball and begins pushing it toward the goal
 						if ( !traversalFailed )
 							setState( pushBallState );
+						else
+							setState( firstAlignState );
 											
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
