@@ -1,16 +1,9 @@
 package iRobotCreate;
 
 
-import iRobotCreate.BallPusher.Position;
 import iRobotCreate.iRobotCommands.Sensor;
 import iRobotCreate.simulator.CameraSimulation;
 import iRobotCreate.simulator.Environment;
-import jade.semantics.lang.sl.grammar.Term;
-
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map.Entry;
-
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
@@ -72,7 +65,12 @@ public class RobotSoccer extends StateBasedController {
 	Position selfPosition;
 	Position puckPosition;
 	Position goalPosition;
-	Position secondGoalPosition;
+	Position ownGoalPosition;
+	Position frontOfOwnGoalPosition;
+	
+	// Booleans for whenever a goal is scored
+	private static boolean ownGoalScored = false;
+	private static boolean goalScored = false;
 	
 	// Variables to set the size of the goal
 	int goalLength = 2304/3;
@@ -126,8 +124,8 @@ public class RobotSoccer extends StateBasedController {
 			
 			// If no parameters are given, use last settings;
 			// otherwise, re-set them from input values.
-			if ( !params.isEmpty() ) {
-			
+			if ( params.size() > 1 ) {
+				
 				( ( RobotSoccer ) agent ).myColour = null;
 				if ( params.containsKey( "MY" ) )
 					( ( RobotSoccer ) agent ).myColour = (String) params.getJavaObject( "MY" );
@@ -188,11 +186,11 @@ public class RobotSoccer extends StateBasedController {
 			
 			// Attacker begins seeking the ball
 			if ( ( ( RobotSoccer ) agent ).myNumber == 0 )
-				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).firstAlignState );
+				( ( RobotSoccer ) agent ).setNewState( ( ( RobotSoccer ) agent ).firstAlignState );
 			
 			// Defender begins seeking its own goal
 			else if ( ( ( RobotSoccer ) agent ).myNumber == 1 )
-				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).secondAlignState );
+				( ( RobotSoccer ) agent ).setNewState( ( ( RobotSoccer ) agent ).secondAlignState );
 			
 			return new Status(0);
 		}
@@ -288,6 +286,23 @@ public class RobotSoccer extends StateBasedController {
 			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( s.getName() );
 	}
 
+	/**
+	 * Print debug messages on state change, if in debug mode.
+	 */
+	public void setNewState(IRobotState s) {
+		final IRobotState state = s;
+		
+		makeSubthread( new Runnable() {
+			@Override
+			public void run() {
+				setState( state );
+				
+				if ( debugMode )
+					( (AbstractInternalFrame) getUI() ).getCommandPanel().print( state.getName() );
+			}
+		}).start();
+		
+	}
 	
 	/**
 	   * Start an {@link iRobotCreate} robot at 9100.<br>
@@ -307,11 +322,22 @@ public class RobotSoccer extends StateBasedController {
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
 	  	
-	  	if (alice==null) {
+	  	iRobotCreate bob = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Bob", 9101, null
+	  			, "PROCESS", "CURRENT"
+	  			, "INSTREAM", "bob.in"
+//	  			, "INSTREAM", "/dev/tty.ElementSerial-ElementSe"
+	  			, "OUTSTREAM", "bob.out"
+//	  			, "OUTSTREAM", "/dev/tty.ElementSerial-ElementSe"
+	  			, "TRACE", "10"
+	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
+	  			);
+	  	
+	  	if (alice==null || bob==null) {
 	  		Trace.log("error", "Cannot start an iRobotCreate agent.");
 	  	}
+	  	
 	  	else {
-	  		while (!alice.isInitialized())
+	  		while (!alice.isInitialized() || !bob.isInitialized())
 	  			CASAUtil.sleepIgnoringInterrupts(1000, null);
 	  		
 	  		if (Environment.exits()) { // we are operating a simulator
@@ -324,6 +350,7 @@ public class RobotSoccer extends StateBasedController {
 	  				env.abclEval("(iRobot-env.set \"puck\" :labeled NIL)",null);
 	  				env.abclEval("(iRobot-env.circle \"puck\" :color-name \"red\")",null);
 	  				env.abclEval("(iRobot-env.triangle \"Alice\" :name \"red-tri\" :color-name \"purple\")",null);
+	  				env.abclEval("(iRobot-env.triangle \"Bob\" :name \"blue-tri\" :color-name \"blue\")",null);
 	  			} catch (Exception e) {
 	  				System.out.println(alice.println("error", "Environment failed", e));
 	  			}
@@ -351,7 +378,14 @@ public class RobotSoccer extends StateBasedController {
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  				);
 	  		
-	  		if (controllerOfAlice==null) {
+	  		RobotSoccer controllerOfBob = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfBob", 9201, null
+	  				, "PROCESS", "CURRENT"
+	  				, "CONTROLS", ":9101"
+	  				, "TRACE", "10"
+	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
+	  				);
+	  		
+	  		if (controllerOfAlice==null || controllerOfBob==null) {
 	  			Trace.log("error", "Cannot create RobotSoccer agent.");
 	  		}
 	  	}
@@ -727,6 +761,33 @@ public class RobotSoccer extends StateBasedController {
 	 * @return a Position object containing location and angle of puck.
 	 */
 	protected Position getPuck() {
+		
+		if (puckPosition != null) {
+			// Check if the ball is in our own goal; if so, the opponent scored
+			if (puckPosition.collision(ownGoalPosition,goalLength,goalHeight,puckRadius))
+			{
+				if (!ownGoalScored) {
+					opponentGoals++;
+					ownGoalScored = true;
+				}
+			}
+			// Reset goal scored states if the ball leaves the goal
+			else
+				ownGoalScored = false;
+
+			// Check if the ball is in the opposing goal; if so, we scored
+			if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
+			{
+				if (!goalScored) {
+					playerGoals++;
+					goalScored = true;
+				}
+			}
+			// Reset goal scored states if the ball leaves the goal
+			else
+				goalScored = false;
+		}
+		
 		return askCamera("circle",ballColour);
 	}
 	
@@ -813,18 +874,18 @@ public class RobotSoccer extends StateBasedController {
 					
 					// Set the goal position
 					int yGoal = whichGoal ? 0 : 1382;
+					int yOwnGoal = (!whichGoal) ? 0 : 1382;
 					goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
-					
+					ownGoalPosition = new Position("goal," + 1152 + "," + yOwnGoal + "," + 0);
 					goalLength = 2304/3;
 					goalHeight = 50;
-					
-					
+										
 					System.out.println("Goal: " + (goalPosition.x-goalLength/2)+","+ (goalPosition.y-goalHeight/2) +","+(goalPosition.x+goalLength/2)+","+ (goalPosition.y+goalHeight/2) );
 					
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
-					setState( firstAlignState);
-//					setState( waitingState);
+//					setState( firstAlignState);
+					setState( waitingState);
 
 				}
 				
@@ -848,9 +909,9 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+		/*	makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						
 						System.out.println(getURL().getFile()+" enter state waiting thread started.");
@@ -866,9 +927,9 @@ public class RobotSoccer extends StateBasedController {
 					System.out.println(getURL().getFile()+" enter state waiting thread ended.");
 
 				}
-			}).start();
+			/*}).start();
 
-		}
+		}*/
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
@@ -886,9 +947,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+			/*makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() {*/ 
 					try {
 						System.out.println(getURL().getFile()+" enter state firstAlign thread started.");
 						
@@ -933,7 +997,7 @@ public class RobotSoccer extends StateBasedController {
 						
 						// Now try to actually get there
 						intendedPosition = strikePosition;	// We need this var to tell us where we're headed.
-						if (wallNotHit)
+						if (wallNotHit) 
 							setState( firstTraversalState );
 						System.out.println(getURL().getFile()+" enter state firstAlign thread ended.");
 						
@@ -946,9 +1010,9 @@ public class RobotSoccer extends StateBasedController {
 				
 					}
 				}
-			}).start();
+			/*}).start();
 
-		}
+		} */
 		
 		//Although it may not seem necessary at first, we need to handle bumps in this
 		//state if the robot goes into the wall when trying to adjust for intersecting
@@ -975,7 +1039,8 @@ public class RobotSoccer extends StateBasedController {
 						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
 						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						setState(firstAlignState);
-						break;
+						return;
+					
 					default:
 						break;
 				}
@@ -995,9 +1060,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+			/*makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						System.out.println(getURL().getFile()+" enter state secondAlign thread started.");
 						// Determine the initial position of the robot
@@ -1013,14 +1081,13 @@ public class RobotSoccer extends StateBasedController {
 						else
 							yGoal = yGoal - (int) iRobotCommands.chassisRadius - 15;
 						
-
-						secondGoalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
+						frontOfOwnGoalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
 																		
 						// Determine the unit vector corresponding to the angle of the robot
 						Vec3 robotDirectionVector = new Vec3(selfPosition.a);
 									
 						// Determine the vector between the robot and the goal position
-						Vec3 robotGoalVector = new Vec3(secondGoalPosition, selfPosition);
+						Vec3 robotGoalVector = new Vec3(frontOfOwnGoalPosition, selfPosition);
 						robotGoalVector.normalize();
 												
 						// Get the angle between the 2 vectors
@@ -1033,7 +1100,7 @@ public class RobotSoccer extends StateBasedController {
 						Thread.sleep(7000);
 						
 						// Now try to actually get there
-						intendedPosition = secondGoalPosition;
+						intendedPosition = frontOfOwnGoalPosition;
 						setState( secondTraversalState );
 						System.out.println(getURL().getFile()+" enter state secondAlign thread ended.");
 						
@@ -1043,9 +1110,9 @@ public class RobotSoccer extends StateBasedController {
 				
 					}
 				}
-			}).start();
+			/*}).start();
 
-		}
+		} */
 		
 		//Although it may not seem necessary at first, we need to handle bumps in this
 		//state if the robot goes into the wall when trying to adjust for intersecting
@@ -1071,7 +1138,8 @@ public class RobotSoccer extends StateBasedController {
 						//went wrong in order for us to hit a wall.
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
 						setState(secondAlignState);
-						break;
+						return;
+						
 					default:
 						break;
 				}
@@ -1091,7 +1159,7 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int allowedDeviation = 50;
+		private final int allowedDeviation = 75;
 		
 		/* Note by Joel -- consider keeping the allowedDeviation on the upper side. It is
 		 * easy for the robot to overshoot, and if it goes beyond where it should the robot
@@ -1114,9 +1182,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+/*			makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						
 						System.out.println(getURL().getFile()+" enter state firstTraversal thread started.");
@@ -1132,7 +1203,10 @@ public class RobotSoccer extends StateBasedController {
 						// Attempt to travel toward the intended position behind the ball.
 						// Break up the traversal into intervals.
 						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
-						do {							
+						do {	
+							if (!isStarted)
+								return;
+							
 							// Calculate the distance remaining to the intended position behind the ball
 							newDistance = distance(selfPosition, intendedPosition);
 							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + newDistance );
@@ -1161,7 +1235,7 @@ public class RobotSoccer extends StateBasedController {
 							puckPosition = getPuck();
 							
 							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance of ball from orig pos: " + distance( initialPuckPosition, puckPosition ) );
-
+							
  						}
 						while ( newDistance > allowedDeviation && wallNotHit );
 						//keep looping while not meeting our distance and we haven't hit a wall.
@@ -1169,6 +1243,7 @@ public class RobotSoccer extends StateBasedController {
 						// If the ball moves, break and try firstAlignState again
 						if ( Math.abs( distance( initialPuckPosition, puckPosition ) ) > allowedDeviation ) {
 							setState( firstAlignState );
+							return;
 						}
 						
 						// Clear robot command queue.
@@ -1192,9 +1267,9 @@ public class RobotSoccer extends StateBasedController {
 					}
 				
 				}
-			}).start();
+/*			}).start();
 
-		}
+		} */
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
@@ -1249,9 +1324,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+/*			makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						System.out.println(getURL().getFile()+" enter state secondTraversal thread started.");
 						double newDistance;
@@ -1261,6 +1339,9 @@ public class RobotSoccer extends StateBasedController {
 						// Break up the traversal into intervals, approximately the same as those of camera updates.
 						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {
+							if (!isStarted)
+								return;
+							
 							// Poll camera for updated position
 							selfPosition = getSelfPosition();
 							
@@ -1302,9 +1383,9 @@ public class RobotSoccer extends StateBasedController {
 					}
 
 				}
-			}).start();
+/*			}).start();
 
-		}
+		} */
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
@@ -1366,9 +1447,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+/*			makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						
 						System.out.println(getURL().getFile()+" enter state pushball thread started.");
@@ -1410,6 +1494,9 @@ public class RobotSoccer extends StateBasedController {
 												
 						// While there is still distance to go...
 						while (remainingDistance > allowedDeviation) {
+							
+							if (!isStarted)
+								return;
 															
 							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + remainingDistance );
 							
@@ -1462,6 +1549,8 @@ public class RobotSoccer extends StateBasedController {
 							
 							if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
 							{
+								playerGoals++;
+								goalScored = true;
 								setState(victoryState);
 								break;
 							}
@@ -1488,9 +1577,9 @@ public class RobotSoccer extends StateBasedController {
 					
 
 				}
-			}).start();
+/*			}).start();
 
-		}
+		} */
 		
 		/* Since driving into the goal is most likely going to activate a bump sensor, we need to be
 		 * able to handle such an event.
@@ -1561,9 +1650,12 @@ public class RobotSoccer extends StateBasedController {
 		@Override
 		public void enterState() {
 			
-			makeSubthread( new Runnable() {
+			if (!isStarted)
+				return;
+			
+/*			makeSubthread( new Runnable() {
 				@Override
-				public void run() {
+				public void run() { */
 					try {
 						
 						// Grab current position of the robot
@@ -1581,6 +1673,9 @@ public class RobotSoccer extends StateBasedController {
 						// Break up the traversal into intervals, approximately the same as those of camera updates.
 						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {
+							if (!isStarted)
+								return;
+							
 							// Poll camera for updated position
 							selfPosition = getSelfPosition();
 
@@ -1619,6 +1714,9 @@ public class RobotSoccer extends StateBasedController {
 						// Break up the traversal into intervals, approximately the same as those of camera updates.
 						// Thus, we check the camera for our updated position; travel for one interval; and, if necessary, repeat the process until we reach our intended position.
 						do {
+							if (!isStarted)
+								return;
+							
 							// Poll camera for updated position
 							selfPosition = getSelfPosition();
 
@@ -1655,9 +1753,9 @@ public class RobotSoccer extends StateBasedController {
 					}
 
 				}
-			}).start();
+/*			}).start();
 
-		}
+		} */
 		
 		@Override
 		public void handleEvent(Sensor sensor, final short reading) {
