@@ -322,7 +322,7 @@ public class RobotSoccer extends StateBasedController {
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
 	  	
-	  	iRobotCreate bob = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Bob", 9101, null
+/*	  	iRobotCreate bob = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Bob", 9101, null
 	  			, "PROCESS", "CURRENT"
 	  			, "INSTREAM", "bob.in"
 //	  			, "INSTREAM", "/dev/tty.ElementSerial-ElementSe"
@@ -331,13 +331,13 @@ public class RobotSoccer extends StateBasedController {
 	  			, "TRACE", "10"
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
-	  	
-	  	if (alice==null || bob==null) {
+*/	  	
+	  	if (alice==null) {
 	  		Trace.log("error", "Cannot start an iRobotCreate agent.");
 	  	}
 	  	
 	  	else {
-	  		while (!alice.isInitialized() || !bob.isInitialized())
+	  		while (!alice.isInitialized())
 	  			CASAUtil.sleepIgnoringInterrupts(1000, null);
 	  		
 	  		if (Environment.exits()) { // we are operating a simulator
@@ -350,7 +350,7 @@ public class RobotSoccer extends StateBasedController {
 	  				env.abclEval("(iRobot-env.set \"puck\" :labeled NIL)",null);
 	  				env.abclEval("(iRobot-env.circle \"puck\" :color-name \"red\")",null);
 	  				env.abclEval("(iRobot-env.triangle \"Alice\" :name \"red-tri\" :color-name \"purple\")",null);
-	  				env.abclEval("(iRobot-env.triangle \"Bob\" :name \"blue-tri\" :color-name \"blue\")",null);
+//	  				env.abclEval("(iRobot-env.triangle \"Bob\" :name \"blue-tri\" :color-name \"blue\")",null);
 	  			} catch (Exception e) {
 	  				System.out.println(alice.println("error", "Environment failed", e));
 	  			}
@@ -378,14 +378,14 @@ public class RobotSoccer extends StateBasedController {
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  				);
 	  		
-	  		RobotSoccer controllerOfBob = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfBob", 9201, null
+/*	  		RobotSoccer controllerOfBob = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfBob", 9201, null
 	  				, "PROCESS", "CURRENT"
 	  				, "CONTROLS", ":9101"
 	  				, "TRACE", "10"
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
-	  				);
+	  				);*/
 	  		
-	  		if (controllerOfAlice==null || controllerOfBob==null) {
+	  		if (controllerOfAlice==null) {
 	  			Trace.log("error", "Cannot create RobotSoccer agent.");
 	  		}
 	  	}
@@ -913,8 +913,13 @@ public class RobotSoccer extends StateBasedController {
 					
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
-//					setState( firstAlignState);
-					setState( waitingState);
+	
+					// For testing
+					isStarted = true;
+					setState( firstAlignState);
+					
+					// For real execution
+//					setState( waitingState);
 
 				}
 				
