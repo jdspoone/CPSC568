@@ -1014,7 +1014,14 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int allowedDeviation = 25;
+		private final int allowedDeviation = 50;
+		
+		/* Note by Joel -- consider keeping the allowedDeviation on the upper side. It is
+		 * easy for the robot to overshoot, and if it goes beyond where it should the robot
+		 * will keep driving straight forever because at that point the newDistance will 
+		 * always be greater than allowedDeviation. 
+		 */
+		
 		private final int traversalSpeed = 100;
 		
 		// Time interval for polling the camera (in milliseconds)
@@ -1022,6 +1029,10 @@ public class RobotSoccer extends StateBasedController {
 		private double timeInterval = 500;
 		
 		private boolean traversalFailed;
+		
+		//This variable is used to kill the distance loop if a wall gets hit, thereby ending
+		//the thread and avoiding multiple traversal threads running simultaneously
+		private boolean wallNotHit = true;
 		
 		@Override
 		public void enterState() {
@@ -1079,18 +1090,21 @@ public class RobotSoccer extends StateBasedController {
 								break;
 							}
  						}
-						while ( newDistance > allowedDeviation );
+						while ( newDistance > allowedDeviation && wallNotHit );
+						//keep looping while not meeting our distance and we haven't hit a wall.
 						
 						// Clear robot command queue.
 						tellRobot("(irobot.drive 0 :flush T)");
 							
 						// If all goes well, we are now positioned behind the ball.
 						// Enter pushBall state, in which the robot aligns itself behind the ball and begins pushing it toward the goal
-						if ( !traversalFailed )
-							setState( pushBallState );
-						else
-							setState( firstAlignState );
-											
+						//wallNotHit check needed since if we've hit a wall, we don't want to change the state.
+						if (wallNotHit) {
+							if ( !traversalFailed )
+								setState( pushBallState );
+							else
+								setState( firstAlignState );
+						}					
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=firstTraversal]: " + e );
@@ -1117,7 +1131,7 @@ public class RobotSoccer extends StateBasedController {
 					case 1: //right bump
 					case 2: //left bump	
 					case 3: //both bumps
-						
+						wallNotHit = false;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
