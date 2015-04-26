@@ -1369,7 +1369,7 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int maxPuckSlip = 75;
+		private final int maxPuckSlip = 200;
 		private final int allowedDeviation = 25;
 		private final int traversalSpeed = 50;
 		
