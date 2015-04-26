@@ -1148,15 +1148,14 @@ public class RobotSoccer extends StateBasedController {
 							
 							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance of ball from orig pos: " + distance( initialPuckPosition, puckPosition ) );
 
-							
-							// If the ball moves, break and try firstAlignState again
-							if ( Math.abs( distance( initialPuckPosition, puckPosition ) ) > allowedDeviation ) {
-								traversalFailed = true;
-								break;
-							}
  						}
 						while ( newDistance > allowedDeviation && wallNotHit );
 						//keep looping while not meeting our distance and we haven't hit a wall.
+						
+						// If the ball moves, break and try firstAlignState again
+						if ( Math.abs( distance( initialPuckPosition, puckPosition ) ) > allowedDeviation ) {
+							setState( firstAlignState );
+						}
 						
 						// Clear robot command queue.
 						tellRobot("(irobot.drive 0 :flush T)");
@@ -1342,7 +1341,8 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int allowedDeviation = 50;
+		private final int maxPuckSlip = 75;
+		private final int allowedDeviation = 25;
 		private final int traversalSpeed = 50;
 		
 		// Time interval for polling the camera (in milliseconds)
@@ -1430,7 +1430,7 @@ public class RobotSoccer extends StateBasedController {
 
 							// The first time through, the error distance is going to be larger because the robot didn't start in contact with the puck
 							// For the moment, let's just give it a pass on that one
-							if (iteration > 0 && errorDistance > allowedDeviation) {
+							if (iteration > 0 && errorDistance > maxPuckSlip) {
 								
 								// Back robot up to get it away from the puck and wait
 								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
