@@ -617,6 +617,7 @@ public class RobotSoccer extends StateBasedController {
 			MLMessage reply = null;
 			while (reply == null) {	
 				reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(8995), ML.CONTENT, shape+","+color);
+//				reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make("136.159.7.26", "9001"), ML.CONTENT, shape+","+color);
 				if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
 					return new Position((String)reply.getParameter(ML.CONTENT));
 				}
@@ -878,18 +879,28 @@ public class RobotSoccer extends StateBasedController {
 				public void run() {
 					try {
 						System.out.println(getURL().getFile()+" enter state firstAlign thread started.");
+						
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "About to poll camera" );
+						
 						// Determine the initial positions of the robot and the puck
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
-																		
+									
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "robot is at: " + selfPosition.toString() );
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "puck is at: " + puckPosition.toString() );
+						
 						// Determine the vector from the goal to the ball, normalize and scale it by the distance we want
 						Vec3 displacement = new Vec3(puckPosition, goalPosition);
 						displacement.normalize();
 						displacement.scale(250);
 												
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "displacement vector is: " + displacement.toString() );
+						
 						// Determine the point to which we want to move
 						Position strikePosition = new Position(puckPosition, displacement);
 									
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "strike position is: " + strikePosition.toString() );
+						
 						// Proceed as if the ball will never be inbetween ourselves and the point we want to move to
 						
 						// Determine the unit vector corresponding to the angle of the robot
@@ -914,6 +925,9 @@ public class RobotSoccer extends StateBasedController {
 						System.out.println(getURL().getFile()+" enter state firstAlign thread ended.");
 						
 					} catch (Throwable e) {
+						
+						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "Error: " + e.toString() );
+						
 						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=optionalBackup]: " + e );
 				
