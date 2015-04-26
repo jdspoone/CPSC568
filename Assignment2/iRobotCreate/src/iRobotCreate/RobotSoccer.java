@@ -1256,7 +1256,7 @@ public class RobotSoccer extends StateBasedController {
 							}
 							
 							// Determine how far we have to travel, either 150 or the remaining distance, whicher is less
-							int driveDistance = (newDistance <= 150) ? (int)newDistance : 150;
+							int driveDistance = (newDistance <= 250) ? (int)newDistance : 250;
 							
 							// Drive forward by that distance
 							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + driveDistance + "))");
