@@ -1174,7 +1174,7 @@ public class RobotSoccer extends StateBasedController {
 								setState( firstAlignState );
 						}
 						
-						System.out.println(getURL().getFile()+" enter state firstTraversal thread started.");
+						System.out.println(getURL().getFile()+" enter state firstTraversal thread ended.");
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=firstTraversal]: " + e );
