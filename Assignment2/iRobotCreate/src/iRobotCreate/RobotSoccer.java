@@ -27,7 +27,15 @@ import casa.ui.AgentUI;
 import casa.util.CASAUtil;
 import casa.util.Trace;
 /**
- * Blah blah blah...
+ * CPSC 568 - Group Assignment 2
+ * 
+ * This class is a state-based controller for a soccer-playing robot. This class supports one- and two-player variations.
+ * 
+ * Both variations have one robot being the "attacker"; this robot locates the ball, moves to a position behind the ball in line with
+ * the center of the opposing goal, and pushes the ball into the goal. Successfully doing this triggers a victory song. The two-player version
+ * also has the second robot being the "defender"; this robot moves in front of its own goal and patrols continuously back and forth.
+ * 
+ * The robot accepts (start), (report), (stop), and (debug) commands.
  *   
  * @author Joel Nielsen
  *         Hugo Richard
@@ -73,6 +81,7 @@ public class RobotSoccer extends StateBasedController {
 	//Size of the puck
 	double puckRadius = 50;
 	
+	// Variables for intended positions for traversal states
 	Position intendedPosition;
 	double intendedDistance;
 	
@@ -177,8 +186,11 @@ public class RobotSoccer extends StateBasedController {
 			// Initialized parameters successfully. Begin playing a game of soccer.
 			( ( RobotSoccer ) agent ).isStarted = true;
 			
+			// Attacker begins seeking the ball
 			if ( ( ( RobotSoccer ) agent ).myNumber == 0 )
 				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).firstAlignState );
+			
+			// Defender begins seeking its own goal
 			else if ( ( ( RobotSoccer ) agent ).myNumber == 1 )
 				( ( RobotSoccer ) agent ).setState( ( ( RobotSoccer ) agent ).secondAlignState );
 			
@@ -400,14 +412,14 @@ public class RobotSoccer extends StateBasedController {
 	
 	/**
 	 * Initialize the controller agent. Subscribe to the robot proxy for updates regarding
-	 * any sensors we care about - namely, Distance, Wall, WallSignal, and VirtualWall.
+	 * any sensors we care about - namely, Buttons.
 	 * Finally, commence interaction by entering the start state.
 	 */
 	@Override
 	public void initializeAfterRegistered( boolean registered ) {
 		super.initializeAfterRegistered( registered );
 						
-		// Subscribe to alerts for VirtualWall updates
+		// Subscribe to alerts for sensor updates
 		try {
 					@SuppressWarnings("unused")
 					SubscribeClientConversation convButtonPress = new SubscribeClientConversation(
@@ -628,6 +640,7 @@ public class RobotSoccer extends StateBasedController {
 		return null;
 	}
 	
+	// Deprecated
 	/*protected Position askCamera(String shape, String color) {
 		try {
 			
@@ -765,9 +778,7 @@ public class RobotSoccer extends StateBasedController {
 	
 		@Override
 		public void enterState() {
-			
-			System.out.print("");
-			
+						
 			makeSubthread( new Runnable() {
 				@Override
 				public void run() {
@@ -813,7 +824,7 @@ public class RobotSoccer extends StateBasedController {
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					setState( firstAlignState);
-//					setState( secondAlignState);
+//					setState( waitingState);
 
 				}
 				
