@@ -1,0 +1,6 @@
+--setstate(waiting)
+--cleanup prints > debug only
+--check 2 robots works after stop
+--check goals scored incremented
+
+
