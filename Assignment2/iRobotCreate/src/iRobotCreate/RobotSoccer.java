@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
+import casa.PerformDescriptor;
 import casa.Status;
 import casa.TransientAgent;
 import casa.abcl.CasaLispOperator;
@@ -613,9 +614,12 @@ public class RobotSoccer extends StateBasedController {
 	
 	protected Position askCamera(String shape, String color) {
 		try {
-			MLMessage reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(8995), ML.CONTENT, shape+","+color);
-			if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
-				return new Position((String)reply.getParameter(ML.CONTENT));
+			MLMessage reply = null;
+			while (reply == null) {	
+				reply = sendRequestAndWait(ML.REQUEST, "get-color-position", URLDescriptor.make(8995), ML.CONTENT, shape+","+color);
+				if (reply!=null && isA(reply.getParameter(ML.PERFORMATIVE),ML.PROPOSE)) {
+					return new Position((String)reply.getParameter(ML.CONTENT));
+				}
 			}
 		} catch (Throwable e) {
 			println("error", "BallPusher.askCamera", e);
@@ -1329,7 +1333,7 @@ public class RobotSoccer extends StateBasedController {
 		
 		// Time interval for polling the camera (in milliseconds)
 		private double timeInterval = 500;
-		
+		private boolean wallHit = false;
 		@Override
 		public void enterState() {
 			
@@ -1430,11 +1434,16 @@ public class RobotSoccer extends StateBasedController {
 							if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
 							{
 								setState(victoryState);
+								break;
 							}
 							else
 							{
 								( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "new puck position is: " + puckPosition.toString() );
 							}
+							
+							//Ensure thread is killed if we hit a wall
+							if (wallHit)
+								break;
 							
 							iteration++;
 						}
@@ -1454,9 +1463,46 @@ public class RobotSoccer extends StateBasedController {
 
 		}
 		
-		@Override
+		/* Since driving into the goal is most likely going to activate a bump sensor, we need to be
+		 * able to handle such an event.
+		 * 
+		 */
+		
 		public void handleEvent(Sensor sensor, final short reading) {
-			// Not needed
+			switch (sensor) {
+			case Overcurrents:
+				// If we get overcurrents, back up and try aligning to the puck again.
+				if ( reading > 0 ) {
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
+					setState(firstAlignState);
+					break;
+				}
+				
+			case BumpsAndWheelDrops:
+				
+				/* In case you're curious why a switch statement is here, remember that
+				 * a subscription reports any changes in a sensor reading, which also 
+				 * encompasses a reading going to 0.
+				 */
+				
+				switch (reading & 3) {
+					case 0: //no bumps
+						break;
+					case 1: //right bump
+					case 2: //left bump	
+					case 3: //both bumps
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
+						{
+							setState(victoryState);
+						}
+						break;
+					default:
+						break;
+				}
+			default:
+				break;
+			}
 		}
 	};
 	
@@ -1716,4 +1762,43 @@ public class RobotSoccer extends StateBasedController {
 		
 		return angle;
 	}
+	
+		
+	// These three methods clean up the conversations we form with the
+	// the camera.
+		
+	/**
+	 * Return an agree to a propose discharge for register-color.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+	 	
+	public PerformDescriptor receiveRegisterColor(MLMessage message) {
+		return new PerformDescriptor();
+	}
+		
+	/**
+	 * Return an agree to a propose discharge for get-color-position.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+		
+	public PerformDescriptor receiveGetColorPosition(MLMessage message) {
+		return new PerformDescriptor();
+	}
+		
+	/**
+	 * Return an agree to a propose discharge for color-calibration.
+	 * 
+	 * @param message
+	 * @return agree PerformDescriptor
+	 */
+		
+	public PerformDescriptor receiveColorCalibration(MLMessage message) {
+		return new PerformDescriptor();
+	}
+	
+	
 }
