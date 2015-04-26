@@ -902,6 +902,10 @@ public class RobotSoccer extends StateBasedController {
 					int yGoal = whichGoal ? 0 : 1382;
 					goalPosition = new Position("goal," + xGoal + "," + yGoal + "," + 0);
 					
+					int yOwnGoal = !whichGoal ? 0 : 1382;
+					ownGoalPosition = new Position("goal," + xGoal + "," + yOwnGoal + "," + 0);
+					
+					
 					goalLength = 2304/3;
 					goalHeight = 50;
 										
