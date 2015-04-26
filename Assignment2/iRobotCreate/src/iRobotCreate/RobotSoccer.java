@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 import casa.LispAccessible;
 import casa.ML;
 import casa.MLMessage;
-import casa.PerformDescriptor;
 import casa.Status;
 import casa.TransientAgent;
 import casa.abcl.CasaLispOperator;
@@ -65,6 +64,13 @@ public class RobotSoccer extends StateBasedController {
 	Position puckPosition;
 	Position goalPosition;
 	Position secondGoalPosition;
+	
+	// Variables to set the size of the goal
+	int goalLength = 2304/3;
+	int goalHeight = 50 ; 
+	
+	//Size of the puck
+	double puckRadius = 50;
 	
 	Position intendedPosition;
 	double intendedDistance;
@@ -483,6 +489,34 @@ public class RobotSoccer extends StateBasedController {
 			return x*3+y*5+a*7;
 			 
 		 }
+
+		 //We want to know if the cup touches the goal (in first approximation this will be a goal)
+		 
+		 //To know if the rectangle (goal) of coordinate p, width l, height h
+		 //is in collision with a circle (cup) of radius r at position (x,y)
+		 
+		public boolean collision(Position p, int l,
+				int h,double puckRadius) {
+			
+			if (x+puckRadius>=p.x-l/2 && x-puckRadius<=p.x+l/2 && y+puckRadius>=p.y-h/2 && y-puckRadius<=p.y+h/2)
+			{
+				return true;
+			}
+			else
+				return false;
+		}
+		
+		//Same function but this time the cup should be inside the goal (regular rules)
+		public boolean include(Position p, int l,
+				int h,int r) {
+			
+			if (x-r>=p.x-l/2 && x+r<=p.x+l/2 && y-r>=p.y-h/2 && y+r<=p.y+h/2)
+			{
+				return true;
+			}
+			else
+				return false;
+		}
 	}
 	
 	// Vector in 3 dimension (the third dimension is useful to make cross product)
@@ -764,7 +798,13 @@ public class RobotSoccer extends StateBasedController {
 					// Set the goal position
 					int yGoal = whichGoal ? 0 : 1382;
 					goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
-										
+					
+					goalLength = 2304/3;
+					goalHeight = 50;
+					
+					
+					System.out.println("Goal: " + (goalPosition.x-goalLength/2)+","+ (goalPosition.y-goalHeight/2) +","+(goalPosition.x+goalLength/2)+","+ (goalPosition.y+goalHeight/2) );
+					
 					// Set robot in "waiting" state, ready for command input.
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 					setState( firstAlignState);
@@ -937,6 +977,7 @@ public class RobotSoccer extends StateBasedController {
 							yGoal = yGoal + (int) iRobotCommands.chassisRadius + 15;
 						else
 							yGoal = yGoal - (int) iRobotCommands.chassisRadius - 15;
+						
 
 						secondGoalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
 																		
@@ -1046,7 +1087,7 @@ public class RobotSoccer extends StateBasedController {
 						do {							
 							// Calculate the distance remaining to the intended position behind the ball
 							newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + newDistance );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + newDistance );
 							
 							// If we're close enough, stop.
 							if ( newDistance <= allowedDeviation )
@@ -1071,7 +1112,7 @@ public class RobotSoccer extends StateBasedController {
 							selfPosition = getSelfPosition();
 							puckPosition = getPuck();
 							
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance of ball from orig pos: " + distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) );
 							
 							// If the ball moves, break and try firstAlignState again
 							if ( Math.abs( distance( initialPuckPosition.x, initialPuckPosition.y, puckPosition.x, puckPosition.y ) ) > allowedDeviation ) {
@@ -1170,7 +1211,7 @@ public class RobotSoccer extends StateBasedController {
 							
 							// Calculate the distance remaining to the intended goal-guarding position
 							newDistance = distance( selfPosition.x, selfPosition.y, intendedPosition.x, intendedPosition.y );
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + newDistance );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + newDistance );
 							
 							// If we're close enough, stop in front of the goal.
 							if ( newDistance <= allowedDeviation )
@@ -1312,7 +1353,7 @@ public class RobotSoccer extends StateBasedController {
 						// While there is still distance to go...
 						while (remainingDistance > allowedDeviation) {
 															
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + remainingDistance );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + remainingDistance );
 							
 							// Determine how far we have to travel, either 150 or the remaining distance, which is less.
 							int driveDistance = (remainingDistance < 150) ? (int)remainingDistance : 150;
@@ -1321,13 +1362,13 @@ public class RobotSoccer extends StateBasedController {
 							Vec3 directionVector = new Vec3(selfPosition.a);
 							directionVector.scale(driveDistance); 
 															
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "direction vector is: " + directionVector.toString() );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "direction vector is: " + directionVector.toString() );
 														
 							// Use this to determine the intended position of the puck
 							Position intendedPuckPosition = new Position(puckPosition, directionVector);
 							
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "current puck position is: " + puckPosition.toString() );
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "intended puck position is: " + intendedPuckPosition.toString() );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "current puck position is: " + puckPosition.toString() );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "intended puck position is: " + intendedPuckPosition.toString() );
 							
 							// Drive forward by the previously calculated distance
 							tellRobot("(progn () (irobot.drive 0) (irobot.moveby " + driveDistance + "))");
@@ -1342,8 +1383,7 @@ public class RobotSoccer extends StateBasedController {
 							// Ensure the ball is where we expect it to be, if not enter first align state
 							double errorDistance = distance(puckPosition.x, puckPosition.y, intendedPuckPosition.x, intendedPuckPosition.y);
 
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "new puck position is: " + puckPosition.toString() );
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "error distance is: " + errorDistance );
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "error distance is: " + errorDistance );
 
 							// The first time through, the error distance is going to be larger because the robot didn't start in contact with the puck
 							// For the moment, let's just give it a pass on that one
@@ -1353,6 +1393,15 @@ public class RobotSoccer extends StateBasedController {
 							
 							// Update the remaining distance after polling the camera
 							remainingDistance = distance(selfPosition.x, selfPosition.y, goalPosition.x, goalPosition.y);
+							
+							if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
+							{
+								setState(victoryState);
+							}
+							else
+							{
+								( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "new puck position is: " + puckPosition.toString() );
+							}
 							
 							iteration++;
 						}
@@ -1429,7 +1478,7 @@ public class RobotSoccer extends StateBasedController {
 
 							// Calculate remaining distance to travel
 							patrolDistance = GOAL_RIGHT_EDGE - selfPosition.x;
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_RIGHT_EDGE);
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_RIGHT_EDGE);
 							
 							// If we happen to overshoot the end of the goal, or we're close enough, stop rightward patrol.
 							if ( patrolDistance <= allowedDeviation )
@@ -1467,7 +1516,7 @@ public class RobotSoccer extends StateBasedController {
 
 							// Calculate remaining distance to travel
 							patrolDistance = selfPosition.x - GOAL_LEFT_EDGE;
-							( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_LEFT_EDGE);
+							( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "distance to go: " + patrolDistance +"\n my x: " + selfPosition.x + "\n edge: " + GOAL_LEFT_EDGE);
 							
 							// If we happen to overshoot the end of the goal, or we're close enough, stop rightward patrol.
 							if ( patrolDistance <= allowedDeviation )
@@ -1550,7 +1599,7 @@ public class RobotSoccer extends StateBasedController {
 		public void enterState() {
 								
 			// Display results to controller's Command console
-			( (AbstractInternalFrame) getUI() ).getCommandPanel().print( "VICTORY!" );
+			( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "VICTORY!" );
 				
 			// Play victory song
 			tellRobot( "(iRobot.execute \"141 1\")" );
@@ -1612,7 +1661,7 @@ public class RobotSoccer extends StateBasedController {
 	 * This method takes the coordinates of the robot, the puck and another point, and determines whether
 	 * the line connecting the robot and the point intersect the puck, taking radius into account
 	 */
-	public boolean intersects(Position robotPosition, Position strikePosition, Position puckPosition) {
+public boolean intersects(Position robotPosition, Position strikePosition, Position puckPosition) {
 		
 		// These are just guesses at the moment
 		double robotRadius = 100;
@@ -1667,41 +1716,5 @@ public class RobotSoccer extends StateBasedController {
 			angle = angle - 360;
 		
 		return angle;
-	}
-	
-	// These three methods clean up the conversations we form with the
-	// the camera.
-	
-	/**
-	 * Return an agree to a propose discharge for register-color.
-	 * 
-	 * @param message
-	 * @return agree PerformDescriptor
-	 */
-	
-	public PerformDescriptor receiveRegisterColor(MLMessage message) {
-		return new PerformDescriptor();
-	}
-	
-	/**
-	 * Return an agree to a propose discharge for get-color-position.
-	 * 
-	 * @param message
-	 * @return agree PerformDescriptor
-	 */
-	
-	public PerformDescriptor receiveGetColorPosition(MLMessage message) {
-		return new PerformDescriptor();
-	}
-	
-	/**
-	 * Return an agree to a propose discharge for color-calibration.
-	 * 
-	 * @param message
-	 * @return agree PerformDescriptor
-	 */
-	
-	public PerformDescriptor receiveColorCalibration(MLMessage message) {
-		return new PerformDescriptor();
 	}
 }
