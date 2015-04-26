@@ -1413,9 +1413,15 @@ public class RobotSoccer extends StateBasedController {
 							// The first time through, the error distance is going to be larger because the robot didn't start in contact with the puck
 							// For the moment, let's just give it a pass on that one
 							if (iteration > 0 && errorDistance > allowedDeviation) {
-								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))"); //back robot up to get it away from the puck
+								
+								// Back robot up to get it away from the puck and wait
+								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
+								Thread.sleep(3000);
+								
+								// Transition back to first align state
 								setState(firstAlignState);
-								break; //to kill the loop and thus kill the thread
+								
+								break; // to kill the loop and thus kill the thread
 							}
 							
 							// Update the remaining distance after polling the camera
@@ -1432,8 +1438,6 @@ public class RobotSoccer extends StateBasedController {
 							
 							iteration++;
 						}
-												
-						// Goal scored? If yes, enter victoryState
 						
 						// If ball is no longer in front of the robot, go back to firstAlignState
 						System.out.println(getURL().getFile()+" enter state pushball thread ended.");
