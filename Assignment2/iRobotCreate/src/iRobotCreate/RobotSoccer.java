@@ -882,6 +882,7 @@ public class RobotSoccer extends StateBasedController {
 	 */
 	IRobotState firstAlignState = new IRobotState("firstAlign") {
 		
+		private boolean wallNotHit = true;
 		@Override
 		public void enterState() {
 			
@@ -932,7 +933,8 @@ public class RobotSoccer extends StateBasedController {
 						
 						// Now try to actually get there
 						intendedPosition = strikePosition;	// We need this var to tell us where we're headed.
-						setState( firstTraversalState );
+						if (wallNotHit)
+							setState( firstTraversalState );
 						System.out.println(getURL().getFile()+" enter state firstAlign thread ended.");
 						
 					} catch (Throwable e) {
@@ -967,10 +969,11 @@ public class RobotSoccer extends StateBasedController {
 					case 1: //right bump
 					case 2: //left bump	
 					case 3: //both bumps
-						
+						wallNotHit = false;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						setState(firstAlignState);
 						break;
 					default:
@@ -1182,7 +1185,7 @@ public class RobotSoccer extends StateBasedController {
 								setState( firstAlignState );
 						}
 						
-						System.out.println(getURL().getFile()+" enter state firstTraversal thread started.");
+						System.out.println(getURL().getFile()+" enter state firstTraversal thread ended.");
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=firstTraversal]: " + e );
@@ -1213,6 +1216,7 @@ public class RobotSoccer extends StateBasedController {
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						traversalFailed = true;
 						setState(firstAlignState);
 						break;
@@ -1498,8 +1502,8 @@ public class RobotSoccer extends StateBasedController {
 			case Overcurrents:
 				// If we get overcurrents, back up and try aligning to the puck again.
 				if ( reading > 0 ) {
-					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
-					setState(firstAlignState);
+					//tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
+					//setState(firstAlignState);
 					break;
 				}
 				
@@ -1516,9 +1520,11 @@ public class RobotSoccer extends StateBasedController {
 					case 1: //right bump
 					case 2: //left bump	
 					case 3: //both bumps
+						wallHit=true;
 						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
 						if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
 						{
+							CASAUtil.sleepIgnoringInterrupts( 5000, null );
 							setState(victoryState);
 						}
 						break;
