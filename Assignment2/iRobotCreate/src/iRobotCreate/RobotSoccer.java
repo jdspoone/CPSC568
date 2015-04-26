@@ -1578,8 +1578,6 @@ public class RobotSoccer extends StateBasedController {
 							
 							if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
 							{
-								playerGoals++;
-								goalScored = true;
 								setState(victoryState);
 								break;
 							}
