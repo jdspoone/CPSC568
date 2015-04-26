@@ -451,11 +451,35 @@ public class RobotSoccer extends StateBasedController {
 		public int x, y, a;
 		Position(String parsable) throws NumberFormatException, IllegalArgumentException {
 			String content[] = parsable.split(",");
-			if (content.length!=4) 
-				throw new IllegalArgumentException("RobotSoccer.Position("+parsable+"): Expected a comma-separted list of length 4.");
-			x = Integer.parseInt(content[1]);
-			y = Integer.parseInt(content[2]);
-			a = Integer.parseInt(content[3]);
+			
+			try {
+				if (content.length == 2) {
+										
+					String s = content[1].substring(1, content[1].length() - 1);
+										
+					String newContent[] = s.split(" ");
+										
+					if (newContent.length == 4) {
+						x = Integer.parseInt(newContent[1]);
+						y = Integer.parseInt(newContent[2]);
+						a = Integer.parseInt(newContent[3]);	
+					}
+				}
+				
+				else if (content.length == 4) {
+					x = Integer.parseInt(content[1]);
+					y = Integer.parseInt(content[2]);
+					a = Integer.parseInt(content[3]);
+				}
+				else {
+					throw new Exception();
+				}
+			}
+			catch (Throwable e) {
+				
+				( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "exception is: " + e );
+				
+			}			
 		}
 		
 		Position(int x1,int y1,int a1)
