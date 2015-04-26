@@ -833,6 +833,7 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
+						System.out.println(getURL().getFile()+" enter state firstAlign thread started.");
 						// Determine the initial positions of the robot and the puck
 						selfPosition = getSelfPosition();
 						puckPosition = getPuck();
@@ -866,6 +867,7 @@ public class RobotSoccer extends StateBasedController {
 						// Now try to actually get there
 						intendedPosition = strikePosition;	// We need this var to tell us where we're headed.
 						setState( firstTraversalState );
+						System.out.println(getURL().getFile()+" enter state firstAlign thread ended.");
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=optionalBackup]: Unexpected error in state thread", e);
@@ -925,6 +927,7 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
+						System.out.println(getURL().getFile()+" enter state secondAlign thread started.");
 						// Determine the initial position of the robot
 						selfPosition = getSelfPosition();
 						
@@ -959,6 +962,7 @@ public class RobotSoccer extends StateBasedController {
 						// Now try to actually get there
 						intendedPosition = secondGoalPosition;
 						setState( secondTraversalState );
+						System.out.println(getURL().getFile()+" enter state secondAlign thread ended.");
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=secondAlign]: Unexpected error in state thread", e);
@@ -1041,7 +1045,8 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
-
+						
+						System.out.println(getURL().getFile()+" enter state firstTraversal thread started.");
 						traversalFailed = false;
 						
 						initialSelfPosition = getSelfPosition();
@@ -1098,13 +1103,16 @@ public class RobotSoccer extends StateBasedController {
 							
 						// If all goes well, we are now positioned behind the ball.
 						// Enter pushBall state, in which the robot aligns itself behind the ball and begins pushing it toward the goal
-						//wallNotHit check needed since if we've hit a wall, we don't want to change the state.
+						//wallNotHit check needed since if we've hit a wall, we don't want to change the state, the error handler does that
+						//for us.
 						if (wallNotHit) {
 							if ( !traversalFailed )
 								setState( pushBallState );
 							else
 								setState( firstAlignState );
-						}					
+						}
+						
+						System.out.println(getURL().getFile()+" enter state firstTraversal thread started.");
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=firstTraversal]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=firstTraversal]: " + e );
@@ -1171,7 +1179,7 @@ public class RobotSoccer extends StateBasedController {
 				@Override
 				public void run() {
 					try {
-
+						System.out.println(getURL().getFile()+" enter state secondTraversal thread started.");
 						double newDistance;
 						errorOccurred = false;
 
@@ -1210,7 +1218,9 @@ public class RobotSoccer extends StateBasedController {
 							// If all goes well, we are now in front of our own goal, ready to start patrolling.
 							// Enter patrolling state, in which the robot moves back and forth in front of the goal.
 							setState( patrolState );
+							
 						}
+						System.out.println(getURL().getFile()+" enter state secondTraversal thread ended.");
 																
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=secondTraversal]: Unexpected error in state thread", e);
@@ -1272,7 +1282,7 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int allowedDeviation = 25;
+		private final int allowedDeviation = 50;
 		private final int traversalSpeed = 50;
 		
 		// Time interval for polling the camera (in milliseconds)
@@ -1362,6 +1372,7 @@ public class RobotSoccer extends StateBasedController {
 							// The first time through, the error distance is going to be larger because the robot didn't start in contact with the puck
 							// For the moment, let's just give it a pass on that one
 							if (iteration > 0 && errorDistance > allowedDeviation) {
+								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))"); //back robot up to get it away from the puck
 								setState(firstAlignState);
 								break; //to kill the loop and thus kill the thread
 							}
@@ -1375,14 +1386,14 @@ public class RobotSoccer extends StateBasedController {
 						// Goal scored? If yes, enter victoryState
 						
 						// If ball is no longer in front of the robot, go back to firstAlignState
-						
+						System.out.println(getURL().getFile()+" enter state pushball thread ended.");
 						
 					} catch (Throwable e) {
 						println("error", "RobotSoccer.enterState() [state=waiting]: Unexpected error in state thread", e);
 						errors.add( "RobotSoccer.enterState() [state=waiting]: " + e );
 					}
 				
-					System.out.println(getURL().getFile()+" enter state pushball thread ended.");
+					
 
 				}
 			}).start();
