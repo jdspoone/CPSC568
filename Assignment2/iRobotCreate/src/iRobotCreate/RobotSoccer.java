@@ -1363,6 +1363,7 @@ public class RobotSoccer extends StateBasedController {
 							// For the moment, let's just give it a pass on that one
 							if (iteration > 0 && errorDistance > allowedDeviation) {
 								setState(firstAlignState);
+								break; //to kill the loop and thus kill the thread
 							}
 							
 							// Update the remaining distance after polling the camera
