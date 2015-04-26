@@ -1002,7 +1002,7 @@ public class RobotSoccer extends StateBasedController {
 						// Determine the vector from the goal to the ball, normalize and scale it by the distance we want
 						Vec3 displacement = new Vec3(puckPosition, goalPosition);
 						displacement.normalize();
-						displacement.scale(250);
+						displacement.scale(100);
 												
 						( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "displacement vector is: " + displacement.toString() );
 						
