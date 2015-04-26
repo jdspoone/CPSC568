@@ -825,8 +825,10 @@ public class RobotSoccer extends StateBasedController {
 					CASAUtil.sleepIgnoringInterrupts( 5000, null );
 					
 					// Set the goal position
+//					int xGoal = 1152; // If we're dealing with the simulator
+					int xGoal = 639; // If we're dealing with the real thing
 					int yGoal = whichGoal ? 0 : 1382;
-					goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
+					goalPosition = new Position("goal," + xGoal + "," + yGoal + "," + 0);
 					
 					goalLength = 2304/3;
 					goalHeight = 50;
