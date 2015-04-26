@@ -497,11 +497,35 @@ public class RobotSoccer extends StateBasedController {
 		public int x, y, a;
 		Position(String parsable) throws NumberFormatException, IllegalArgumentException {
 			String content[] = parsable.split(",");
-			if (content.length!=4) 
-				throw new IllegalArgumentException("RobotSoccer.Position("+parsable+"): Expected a comma-separted list of length 4.");
-			x = Integer.parseInt(content[1]);
-			y = Integer.parseInt(content[2]);
-			a = Integer.parseInt(content[3]);
+			
+			try {
+				if (content.length == 2) {
+										
+					String s = content[1].substring(1, content[1].length() - 1);
+										
+					String newContent[] = s.split(" ");
+										
+					if (newContent.length == 4) {
+						x = Integer.parseInt(newContent[1]);
+						y = Integer.parseInt(newContent[2]);
+						a = Integer.parseInt(newContent[3]);	
+					}
+				}
+				
+				else if (content.length == 4) {
+					x = Integer.parseInt(content[1]);
+					y = Integer.parseInt(content[2]);
+					a = Integer.parseInt(content[3]);
+				}
+				else {
+					throw new Exception();
+				}
+			}
+			catch (Throwable e) {
+				
+				( (AbstractInternalFrame) getUI() ).getCommandPanel().print(getCurrentState().getName()+": "+ "exception is: " + e );
+				
+			}			
 		}
 		
 		Position(int x1,int y1,int a1)
@@ -873,10 +897,11 @@ public class RobotSoccer extends StateBasedController {
 					CASAUtil.sleepIgnoringInterrupts( 5000, null );
 					
 					// Set the goal position
+//					int xGoal = 1152; // If we're dealing with the simulator
+					int xGoal = 639; // If we're dealing with the real thing
 					int yGoal = whichGoal ? 0 : 1382;
-					int yOwnGoal = (!whichGoal) ? 0 : 1382;
-					goalPosition = new Position("goal," + 1152 + "," + yGoal + "," + 0);
-					ownGoalPosition = new Position("goal," + 1152 + "," + yOwnGoal + "," + 0);
+					goalPosition = new Position("goal," + xGoal + "," + yGoal + "," + 0);
+					
 					goalLength = 2304/3;
 					goalHeight = 50;
 										
@@ -1437,7 +1462,7 @@ public class RobotSoccer extends StateBasedController {
 		private Position initialPuckPosition;
 		
 		// Constants for robot travelling speed and margin of error
-		private final int maxPuckSlip = 75;
+		private final int maxPuckSlip = 200;
 		private final int allowedDeviation = 25;
 		private final int traversalSpeed = 50;
 		
