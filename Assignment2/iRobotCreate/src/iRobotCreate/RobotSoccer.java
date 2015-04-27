@@ -1623,8 +1623,8 @@ public class RobotSoccer extends StateBasedController {
 			case Overcurrents:
 				// If we get overcurrents, back up and try aligning to the puck again.
 				if ( reading > 0 ) {
-					//tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
-					//setState(firstAlignState);
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");	
+					setState(firstAlignState);
 					break;
 				}
 				
