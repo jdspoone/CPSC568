@@ -1170,7 +1170,7 @@ public class RobotSoccer extends StateBasedController {
 						
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");
 						setState(secondAlignState);
 						return;
 						
@@ -1324,7 +1324,7 @@ public class RobotSoccer extends StateBasedController {
 						wallNotHit = false;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");
 						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						traversalFailed = true;
 						setState(firstAlignState);
@@ -1428,7 +1428,7 @@ public class RobotSoccer extends StateBasedController {
 				// If we get overcurrents, back up and try aligning to the goal again.
 				if ( reading > 0 ) {
 					errorOccurred = true;
-					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");	
 					setState(secondAlignState);
 					break;
 				}
@@ -1449,7 +1449,7 @@ public class RobotSoccer extends StateBasedController {
 						errorOccurred = true;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");
 						setState(secondAlignState);
 						break;
 					default:
@@ -1569,7 +1569,7 @@ public class RobotSoccer extends StateBasedController {
 							if (iteration > 0 && errorDistance > maxPuckSlip) {
 								
 								// Back robot up to get it away from the puck and wait
-								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
+								tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -150))");
 								Thread.sleep(3000);
 								
 								// Transition back to first align state
@@ -1642,7 +1642,7 @@ public class RobotSoccer extends StateBasedController {
 					case 2: //left bump	
 					case 3: //both bumps
 						wallHit=true;
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");
 						if (puckPosition.collision(goalPosition,goalLength,goalHeight,puckRadius))
 						{
 							CASAUtil.sleepIgnoringInterrupts( 5000, null );
@@ -1795,7 +1795,7 @@ public class RobotSoccer extends StateBasedController {
 			case Overcurrents:
 				// If we get overcurrents, back up and try aligning to the goal again.
 				if ( reading > 0 ) {
-					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");	
+					tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");	
 					setState(secondAlignState);
 					break;
 				}
@@ -1815,7 +1815,7 @@ public class RobotSoccer extends StateBasedController {
 					case 3: //both bumps
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0) (irobot.moveby -150))");
 						setState(secondAlignState);
 						break;
 					default:
