@@ -915,11 +915,11 @@ public class RobotSoccer extends StateBasedController {
 					System.out.println(getURL().getFile()+" enter state start thread ended.");	
 	
 					// For testing
-					isStarted = true;
-					setState( firstAlignState);
+//					isStarted = true;
+//					setState( firstAlignState);
 					
 					// For real execution
-//					setState( waitingState);
+					setState( waitingState);
 
 				}
 				
