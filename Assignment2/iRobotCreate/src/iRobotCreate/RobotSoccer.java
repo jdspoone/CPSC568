@@ -668,12 +668,12 @@ public class RobotSoccer extends StateBasedController {
 	 * 
 	 * Taken from BallPusher in the iRobotCreate package.
 	 * 
-	 * Whenever we ask the camera something, errors can occur
-	 * we ask it twice just to make sure the camera gives the same answer
-	 * (the camera is not likely to produce the exact same error twice)
+	 * Originally we had a modified version of this method that would poll the camera twice
+	 * to see if the values we were retrieving the same to account for the fact that the camera
+	 * can lie. However, it was unforgivably slow in practice.
 	 * 
-	 * if the camera is wrong, we ask the same question a certain number of time and we take
-	 * the answer that came up the most often.
+	 * Since connecting to the camera every time is not a given, this method will loop continuously
+	 * until an answer is received
 	 * 
 	 * 
 	 * @param shape - the shape you wish to know the position for
