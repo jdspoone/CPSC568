@@ -1070,7 +1070,7 @@ public class RobotSoccer extends StateBasedController {
 						wallNotHit = false;
 						//back the robot up, and let's try realigning. Clearly something
 						//went wrong in order for us to hit a wall.
-						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -50))");
+						tellRobot("(progn () (irobot.drive 0 :flush T) (irobot.moveby -150))");
 						CASAUtil.sleepIgnoringInterrupts( 5000, null );
 						setState(firstAlignState);
 						return;
