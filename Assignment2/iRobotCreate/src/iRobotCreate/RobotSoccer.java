@@ -322,7 +322,7 @@ public class RobotSoccer extends StateBasedController {
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
 	  	
-/*	  	iRobotCreate bob = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Bob", 9101, null
+	  	iRobotCreate bob = (iRobotCreate)CASAUtil.startAnAgent(iRobotCreate.class, "Bob", 9101, null
 	  			, "PROCESS", "CURRENT"
 	  			, "INSTREAM", "bob.in"
 //	  			, "INSTREAM", "/dev/tty.ElementSerial-ElementSe"
@@ -331,7 +331,7 @@ public class RobotSoccer extends StateBasedController {
 	  			, "TRACE", "10"
 	  			, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  			);
-*/	  	
+	  	
 	  	if (alice==null) {
 	  		Trace.log("error", "Cannot start an iRobotCreate agent.");
 	  	}
@@ -378,14 +378,14 @@ public class RobotSoccer extends StateBasedController {
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
 	  				);
 	  		
-/*	  		RobotSoccer controllerOfBob = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfBob", 9201, null
+	  		RobotSoccer controllerOfBob = (RobotSoccer)CASAUtil.startAnAgent(RobotSoccer.class, "controllerOfBob", 9201, null
 	  				, "PROCESS", "CURRENT"
 	  				, "CONTROLS", ":9101"
 	  				, "TRACE", "10"
 	  				, "TRACETAGS", "iRobot9,warning,msg,msgHandling,kb9,eventloop,-info,commitments,-policies9,-lisp,-eventqueue9,-conversations"
-	  				);*/
+	  				);
 	  		
-	  		if (controllerOfAlice==null) {
+	  		if (controllerOfAlice==null || controllerOfBob==null) {
 	  			Trace.log("error", "Cannot create RobotSoccer agent.");
 	  		}
 	  	}
