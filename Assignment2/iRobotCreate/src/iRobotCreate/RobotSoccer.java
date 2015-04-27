@@ -1568,6 +1568,9 @@ public class RobotSoccer extends StateBasedController {
 						{
 							CASAUtil.sleepIgnoringInterrupts( 5000, null );
 							setState(victoryState);
+						} else {
+							CASAUtil.sleepIgnoringInterrupts( 5000, null );
+							setState(firstAlignState);
 						}
 						break;
 					default:
